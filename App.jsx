@@ -8,7 +8,7 @@ import {
   CheckCircle, Clock, AlertCircle, XCircle, Send,
   Image, Megaphone, Settings, Eye, EyeOff, Trash2,
   Edit3, Star, TrendingUp, Globe, MessageSquare, Shield,
-  Linkedin, Mail, Radio, Check, X, RefreshCw, ChevronDown, ChevronUp, Upload
+  Linkedin, Mail, Radio, Check, X, RefreshCw, ChevronDown, ChevronUp, Upload, LogIn
 } from "lucide-react";
 // inp is defined inside App() as a useMemo
 const FONT_URL = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Bebas+Neue&family=Anton&family=Abril+Fatface&family=Oswald:wght@600&family=Playfair+Display:ital,wght@0,700;1,400&family=Merriweather:wght@700&family=Montserrat:wght@700&family=Poppins:wght@400;600;700&family=Raleway:wght@700&family=Josefin+Sans:wght@700&family=Nunito:wght@800&family=DM+Sans:wght@700&family=Dancing+Script:wght@700&family=Pacifico&family=Lobster&family=Sacramento&family=Cormorant+Garamond:wght@700&family=Libre+Baskerville:wght@700&display=swap";
@@ -132,7 +132,7 @@ const TABS = [
 ];
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
-export default function App() {
+export default function App({ session, onSignOut }) {
   const [view,      setView]     = useState("login");
   const [companies, setCompanies]= useState(DEFAULT_COMPANIES);
   const [co,        setCo]       = useState(null);
@@ -282,7 +282,7 @@ export default function App() {
             <button onClick={()=>setNewCoForm(!newCoForm)} style={{background:`linear-gradient(135deg,${T.accent},${T.primaryL})`,color:"#fff",border:"none",padding:"9px 20px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13,display:"flex",alignItems:"center",gap:7,boxShadow:`0 4px 20px ${T.primary}45`,fontFamily:"'Inter',sans-serif"}}>
               <Plus size={15}/> Nova Empresa
             </button>
-            <button onClick={()=>{ storage.remove("sociamind-session"); setView("login"); }} style={{background:"none",border:`1px solid ${T.border2}`,color:T.textMuted,padding:"9px 12px",borderRadius:10,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",gap:6,fontFamily:"'Inter',sans-serif"}}>
+            <button onClick={()=>{ storage.remove("sociamind-session"); if(onSignOut) onSignOut(); else setView("login"); }} style={{background:"none",border:`1px solid ${T.border2}`,color:T.textMuted,padding:"9px 12px",borderRadius:10,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",gap:6,fontFamily:"'Inter',sans-serif"}}>
               <LogOut size={14}/> Sair
             </button>
           </div>
