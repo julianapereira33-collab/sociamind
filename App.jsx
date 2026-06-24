@@ -90,6 +90,7 @@ const EMPTY_DATA = {
   historia:"",historiaFundador:"",missao:"",visao:"",valores:"",diferenciais:"",concorrentes:"",premios:"",depoimentos:"",
   // WhatsApp ecosystem
   waNome:"",waNumero:"",waBaId:"",waPhoneId:"",waApiToken:"",
+  zapiInstanceId:"",zapiToken:"",zapiClientToken:"",zapiPhone:"",
   waCanais:[],waListas:[],waGrupos:[],
   // Outras redes
   igHandle:"",igUrl:"",igSeg:"",igFreq:"",igAutoPost:false,
@@ -1505,7 +1506,36 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
     const iu=(k,v)=>setItem(p=>({...p,[k]:v}));
     function addItem(){ upd("agenda",[...agenda,{...item,id:Date.now()}]); setNovo(false); flash("✓ Adicionado ao calendário","teal"); }
     function updS(id,s,extra={}){ upd("agenda",agenda.map(a=>a.id===id?{...a,status:s,...extra}:a)); }
-    function sendApproval(it){ updS(it.id,"Ag. aprovação"); setWaP(it); flash("📱 Enviado para WhatsApp!","teal"); }
+    async function sendApproval(it){
+      updS(it.id,"Ag. aprovação"); setWaP(it);
+      const { zapiInstanceId, zapiToken, zapiClientToken, zapiPhone, waNome, responsavel } = form;
+      if(!zapiInstanceId || !zapiToken || !zapiClientToken || !zapiPhone){
+        flash("⚠️ Configure o Zapi nas Integrações para envio real","coral"); return;
+      }
+      const msg =
+`🎯 *Aprovação de Conteúdo — ${co.name}*
+
+📌 *${it.titulo}*
+📅 ${it.data} às ${it.hora||"--:--"}
+📲 ${it.plataforma}
+
+📝 *Legenda:*
+${it.legenda}
+
+---
+Responda:
+✅ *APROVAR* — para publicar
+✏️ *ALTERAR: [seu comentário]* — para solicitar mudança`;
+
+      try {
+        await fetch('/api/whatsapp', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ instanceId:zapiInstanceId, token:zapiToken, clientToken:zapiClientToken, phone:zapiPhone, message:msg }),
+        });
+        flash("✅ Enviado para WhatsApp via Zapi!","teal");
+      } catch { flash("⚠️ Erro ao enviar — verifique as credenciais do Zapi","coral"); }
+    }
     function approve(it){ updS(it.id,"Aprovado"); setWaP(null); flash("✅ Aprovado — será agendado!","teal"); }
     function reqChange(it){ if(!altMsg.trim()) return; updS(it.id,"Alteração",{alteracaoMsg:altMsg}); setAltMsg(""); setWaP(null); flash("✏️ Alteração registrada","gold"); }
     const SC={"Rascunho":C.muted,"Ag. aprovação":"#A0C4FF","Alteração":"#E8890C","Aprovado":"#FFD580","Agendado":"#DDD6FE","Publicado":"#10B981"};
@@ -1584,7 +1614,12 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
     return <>
       <InfoBox color="#F5A623">🔒 Tokens armazenados apenas neste dispositivo.</InfoBox>
       <Sec title="Meta Business — Instagram + Facebook" accent={C.blue}><G2 ch={[<F label="App ID"><I k="metaAppId" ph="000000000000" /></F>,<F label="App Secret"><I k="metaSecret" type="password" ph="••••••••" /></F>]} /><F label="Page Access Token"><TA k="metaPageToken" ph="EAAxxxx…" rows={2} /></F><F label="Instagram Business Account ID"><I k="metaIgId" ph="17841400000" /></F></Sec>
-      <Sec title="WhatsApp Business API" accent="#25D366"><G2 ch={[<F label="WABA ID"><I k="waBaId" ph="000000000000" /></F>,<F label="Phone Number ID"><I k="waPhoneId" ph="000000000000" /></F>]} /><F label="Access Token"><TA k="waApiToken" ph="EAAxxxx…" rows={2} /></F></Sec>
+      <Sec title="Zapi — WhatsApp Automático" accent="#25D366">
+        <InfoBox color="#25D366">O Zapi envia mensagens reais de aprovação de conteúdo via WhatsApp. Obtenha as credenciais em app.z-api.io</InfoBox>
+        <G2 ch={[<F label="Instance ID" req><I k="zapiInstanceId" ph="Ex: 3A1B2C3D4E5F" /></F>,<F label="Token" req><I k="zapiToken" ph="Token da instância" /></F>]} />
+        <G2 ch={[<F label="Client-Token (Security)" req><I k="zapiClientToken" ph="Security Token do painel" /></F>,<F label="Número para aprovação (com DDI)" req><I k="zapiPhone" ph="5514999999999" /></F>]} />
+      </Sec>
+      <Sec title="WhatsApp Business API (Meta)" accent="#25D366"><G2 ch={[<F label="WABA ID"><I k="waBaId" ph="000000000000" /></F>,<F label="Phone Number ID"><I k="waPhoneId" ph="000000000000" /></F>]} /><F label="Access Token"><TA k="waApiToken" ph="EAAxxxx…" rows={2} /></F></Sec>
       <Sec title="ManyChat" accent={C.purple}><G2 ch={[<F label="API Key"><I k="mcApiKey" type="password" ph="••••••" /></F>,<F label="Bot ID"><I k="mcBotId" ph="0000000" /></F>]} /><F label="Fluxos ativos"><TA k="mcFlows" ph="Boas-vindas, nutrição, respostas…" rows={2} /></F></Sec>
       <Sec title="Canva + N8n + Super Agentes" accent={C.gold}><G2 ch={[<F label="Brand Kit ID"><I k="canvaKitId" ph="DAFxxxx" /></F>,<F label="Pasta templates"><I k="canvaFolder" ph="https://canva.com/folder/…" /></F>]} /><G2 ch={[<F label="N8n Webhook"><I k="n8nWebhook" ph="https://…/webhook/…" /></F>,<F label="Super Agentes ID"><I k="superAgentesId" ph="agent-xxxx" /></F>]} /><F label="Google Drive"><I k="driveFolder" ph="https://drive.google.com/…" /></F></Sec>
     </>;
