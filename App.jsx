@@ -7,7 +7,8 @@ import {
   LogOut, Save, ChevronLeft, Plus, Zap, BarChart2,
   CheckCircle, Clock, AlertCircle, XCircle, Send,
   Image, Megaphone, Settings, Eye, EyeOff, Trash2,
-  Edit3, Star, TrendingUp, Globe, MessageSquare, Shield
+  Edit3, Star, TrendingUp, Globe, MessageSquare, Shield,
+  Linkedin, Mail, Radio, Check, X, RefreshCw, ChevronDown, ChevronUp
 } from "lucide-react";
 // inp is defined inside App() as a useMemo
 const FONT_URL = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Bebas+Neue&family=Anton&family=Abril+Fatface&family=Oswald:wght@600&family=Playfair+Display:ital,wght@0,700;1,400&family=Merriweather:wght@700&family=Montserrat:wght@700&family=Poppins:wght@400;600;700&family=Raleway:wght@700&family=Josefin+Sans:wght@700&family=Nunito:wght@800&family=DM+Sans:wght@700&family=Dancing+Script:wght@700&family=Pacifico&family=Lobster&family=Sacramento&family=Cormorant+Garamond:wght@700&family=Libre+Baskerville:wght@700&display=swap";
@@ -127,6 +128,7 @@ const TABS = [
   {id:"redes",      Icon:Smartphone,    label:"Redes"},
   {id:"integracoes",Icon:Plug,          label:"Integrações"},
   {id:"mensagens",  Icon:MessageSquare, label:"Mensagens"},
+  {id:"campanhas",  Icon:Megaphone,     label:"Campanhas"},
   {id:"cofre",      Icon:Lock,          label:"Cofre"},
 ];
 
@@ -407,6 +409,7 @@ export default function App() {
           {tab==="redes"       &&<TabRedes />}
           {tab==="integracoes" &&<TabIntegracoes />}
           {tab==="mensagens"   &&<TabMensagens />}
+          {tab==="campanhas"   &&<TabCampanhas />}
           {tab==="cofre"       &&<TabCofre />}
         </div>
       </div>
@@ -560,9 +563,11 @@ export default function App() {
   function TabScanner(){
     const [urls, setUrls] = useState({
       instagram:"", facebook:"", tiktok:"", site:"",
-      whatsapp:"", youtube:"", extra:""
+      whatsapp:"", youtube:"", linkedin:"", extra:""
     });
     const [manual, setManual] = useState("");
+    const [editMode, setEditMode] = useState(false);
+    const [editData, setEditData] = useState(null);
     const [phase, setPhase] = useState("idle"); // idle | scanning | done | error
     const [log, setLog] = useState([]);
     const [result, setResult] = useState(null);
@@ -587,7 +592,7 @@ export default function App() {
     async function runScan() {
       const hasInput = Object.values(urls).some(v=>v.trim()) || manual.trim();
       if (!hasInput) return;
-      setPhase("scanning"); setLog([]); setResult(null);
+      setPhase("scanning"); setLog([]); setResult(null); setEditMode(false); setEditData(null);
 
       addLog("🔍 Iniciando análise estratégica da marca...", "start");
       addLog("📡 Coletando dados das redes sociais informadas...", "info");
@@ -610,6 +615,7 @@ PERFIS INFORMADOS (referência de posicionamento digital):
 ${urls.instagram ? `• Instagram: ${urls.instagram}` : ""}
 ${urls.facebook ? `• Facebook: ${urls.facebook}` : ""}
 ${urls.tiktok ? `• TikTok: ${urls.tiktok}` : ""}
+${urls.linkedin ? `• LinkedIn: ${urls.linkedin}` : ""}
 ${urls.site ? `• Site: ${urls.site}` : ""}
 ${urls.youtube ? `• YouTube: ${urls.youtube}` : ""}
 ${urls.whatsapp ? `• WhatsApp: ${urls.whatsapp}` : ""}
@@ -736,6 +742,7 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
         const clean = raw.replace(/```json|```/g,"").trim();
         const parsed = JSON.parse(clean);
         setResult(parsed);
+        setEditData(JSON.parse(JSON.stringify(parsed)));
         setPhase("done");
         addLog("✅ Análise concluída com sucesso!", "success");
         addLog(`🎯 ${parsed.personas?.length||0} persona(s) identificada(s)`, "success");
@@ -754,33 +761,34 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
       }
     }
 
-    async function applyToForm() {
-      if (!result) return;
+    async function applyToForm(dataOverride) {
+      const src = dataOverride || editData || result;
+      if (!src) return;
+      if(editMode){ setResult(editData); setEditMode(false); }
       setApplying(true);
       addLog("📝 Aplicando dados ao cadastro...", "info");
 
       const updates = {};
-      if (result.slogan)        updates.slogan        = result.slogan;
-      if (result.descricao)     updates.descricao     = result.descricao;
-      if (result.missao)        updates.missao        = result.missao;
-      if (result.visao)         updates.visao         = result.visao;
-      if (result.valores)       updates.valores       = result.valores;
-      if (result.diferenciais)  updates.diferenciais  = result.diferenciais;
-      if (result.sentimentoMarca) updates.sentimentoMarca = result.sentimentoMarca;
-      if (result.faixaPreco)    updates.faixaPreco    = result.faixaPreco;
-      if (result.emojisOficiais) updates.emojisOficiais = result.emojisOficiais;
-      if (result.topicosSempre) updates.topicosSempre = result.topicosSempre;
-      if (result.topicosNunca)  updates.topicosNunca  = result.topicosNunca;
-      if (result.hashtags)      updates.hashtags      = result.hashtags;
-      if (result.corPrimaria)   updates.corPrimaria   = result.corPrimaria;
-      if (result.corSecundaria) updates.corSecundaria = result.corSecundaria;
-      if (result.corAcento)     updates.corAcento     = result.corAcento;
-      if (result.fonteTitulo)   updates.fonteTitulo   = result.fonteTitulo;
-      if (result.fonteCorpo)    updates.fonteCorpo    = result.fonteCorpo;
+      if (src.slogan)        updates.slogan        = src.slogan;
+      if (src.descricao)     updates.descricao     = src.descricao;
+      if (src.missao)        updates.missao        = src.missao;
+      if (src.visao)         updates.visao         = src.visao;
+      if (src.valores)       updates.valores       = src.valores;
+      if (src.diferenciais)  updates.diferenciais  = src.diferenciais;
+      if (src.sentimentoMarca) updates.sentimentoMarca = src.sentimentoMarca;
+      if (src.faixaPreco)    updates.faixaPreco    = src.faixaPreco;
+      if (src.emojisOficiais) updates.emojisOficiais = src.emojisOficiais;
+      if (src.topicosSempre) updates.topicosSempre = src.topicosSempre;
+      if (src.topicosNunca)  updates.topicosNunca  = src.topicosNunca;
+      if (src.hashtags)      updates.hashtags      = src.hashtags;
+      if (src.corPrimaria)   updates.corPrimaria   = src.corPrimaria;
+      if (src.corSecundaria) updates.corSecundaria = src.corSecundaria;
+      if (src.corAcento)     updates.corAcento     = src.corAcento;
+      if (src.fonteTitulo)   updates.fonteTitulo   = src.fonteTitulo;
+      if (src.fonteCorpo)    updates.fonteCorpo    = src.fonteCorpo;
 
-      // Apply personas as publicos
-      if (result.personas?.length) {
-        updates.publicos = result.personas.map((p,i) => ({
+      if (src.personas?.length) {
+        updates.publicos = src.personas.map((p,i) => ({
           id: Date.now()+i,
           nome: p.nome||p.apelido||`Persona ${i+1}`,
           produto: "",
@@ -797,9 +805,8 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
         }));
       }
 
-      // Apply products
-      if (result.produtos?.length) {
-        updates.produtos = result.produtos.map((p,i) => ({
+      if (src.produtos?.length) {
+        updates.produtos = src.produtos.map((p,i) => ({
           id: Date.now()+100+i,
           nome: p.nome||"",
           subtitulo: p.subtitulo||"",
@@ -812,21 +819,20 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
         }));
       }
 
-      // Apply content strategy
-      if (result.estrategiaConteudo) {
-        const ec = result.estrategiaConteudo;
-        if (result.personas?.length) {
-          updates.perfilConteudo = result.personas.map((p,i) => ({
+      if (src.estrategiaConteudo) {
+        const ec = src.estrategiaConteudo;
+        if (src.personas?.length) {
+          updates.perfilConteudo = src.personas.map((p,i) => ({
             publicoId: (Date.now()+i).toString(),
-            topicosSempre: result.topicosSempre||"",
-            topicosNunca: result.topicosNunca||"",
+            topicosSempre: src.topicosSempre||"",
+            topicosNunca: src.topicosNunca||"",
             freqFeed: ec.freqFeed||"",
             freqStory: ec.freqStory||"",
             freqReel: ec.freqReel||"",
             freqWa: ec.freqWa||"",
             tom: ec.tomVoz||"",
             hooks: ec.hooksIdeal||"",
-            hashtags: result.hashtags||"",
+            hashtags: src.hashtags||"",
           }));
         }
       }
@@ -877,6 +883,7 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
             ["⚫","TikTok","tiktok","@usuario"],
             ["🌐","Site / Blog","site","https://seusite.com.br"],
             ["🔴","YouTube","youtube","Link do canal"],
+            ["🔷","LinkedIn","linkedin","linkedin.com/company/…"],
             ["🟢","WhatsApp Business","whatsapp","Número ou link wa.me/…"],
           ].map(([icon,label,key,ph])=>(
             <div key={key}>
@@ -931,29 +938,74 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
 
       {/* Results */}
       {result&&<>
-        {/* Apply button */}
-        <div style={{background:"linear-gradient(135deg,#F5A62315,#FFD58008)",border:"1px solid #F5A62330",borderRadius:14,padding:"16px 20px",marginBottom:18,display:"flex",alignItems:"center",justifyContent:"space-between",gap:16}}>
+        {/* Barra de ações */}
+        <div style={{background:G.glow,border:`1px solid ${T.primary}25`,borderRadius:14,padding:"14px 18px",marginBottom:18,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
           <div>
-            <div style={{fontSize:14,fontWeight:700,background:G.hero,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>Análise concluída — {result.personas?.length||0} personas · {result.produtos?.length||0} produtos</div>
-            <div style={{fontSize:12,color:C.muted,marginTop:2}}>Revise os resultados abaixo e clique para aplicar tudo ao cadastro desta empresa</div>
+            <div style={{fontSize:14,fontWeight:700,color:C.text}}>Análise concluída — {(editData||result).personas?.length||0} personas · {(editData||result).produtos?.length||0} produtos</div>
+            <div style={{fontSize:12,color:C.muted,marginTop:2}}>{editMode?"Edite os campos abaixo e clique em Salvar e Aplicar quando terminar":"Revise, edite se necessário e aplique ao cadastro"}</div>
           </div>
-          <button onClick={applyToForm} disabled={applying} style={{background:G.primary,color:"#fff",border:"none",padding:"11px 26px",borderRadius:10,cursor:applying?"default":"pointer",fontWeight:700,fontSize:13,flexShrink:0,boxShadow:`0 4px 24px ${T.primary}45`,opacity:applying?.7:1}}>
-            {applying?"Aplicando…":"✅ Aplicar ao Cadastro"}
-          </button>
+          <div style={{display:"flex",gap:8,flexShrink:0}}>
+            {!editMode
+              ? <button onClick={()=>setEditMode(true)} style={{background:C.surf3,color:C.text,border:`1px solid ${C.border}`,padding:"9px 18px",borderRadius:9,cursor:"pointer",fontWeight:600,fontSize:13,display:"flex",alignItems:"center",gap:6}}>
+                  <Edit3 size={13}/> Editar
+                </button>
+              : <button onClick={()=>setEditMode(false)} style={{background:"#FF444415",color:"#FF7070",border:"1px solid #FF444430",padding:"9px 18px",borderRadius:9,cursor:"pointer",fontWeight:600,fontSize:13,display:"flex",alignItems:"center",gap:6}}>
+                  <X size={13}/> Cancelar
+                </button>
+            }
+            <button onClick={()=>applyToForm()} disabled={applying} style={{background:G.primary,color:"#fff",border:"none",padding:"9px 22px",borderRadius:9,cursor:applying?"default":"pointer",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",gap:6,opacity:applying?.7:1,boxShadow:`0 4px 20px ${T.primary}40`}}>
+              <Check size={13}/>{applying?"Aplicando…":editMode?"Salvar e Aplicar":"Aplicar ao Cadastro"}
+            </button>
+          </div>
         </div>
 
-        {/* Strategy overview */}
+        {/* Diagnóstico + Estratégia editáveis */}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
           <div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
             <div style={{fontSize:9,fontWeight:800,color:"#F5A623",letterSpacing:3,marginBottom:10,textTransform:"uppercase"}}>Diagnóstico da Marca</div>
-            <p style={{fontSize:14,color:C.text,margin:0,lineHeight:1.7}}>{result.resumoMarca}</p>
-            {result.diagnostico&&<p style={{fontSize:13,color:C.muted,margin:"8px 0 0",lineHeight:1.6}}>{result.diagnostico}</p>}
+            {editMode
+              ? <>
+                  <textarea value={editData?.resumoMarca||""} onChange={e=>setEditData(p=>({...p,resumoMarca:e.target.value}))} rows={3} style={{...inp,resize:"vertical",fontFamily:"inherit",fontSize:13,lineHeight:1.6,marginBottom:8}} />
+                  <textarea value={editData?.diagnostico||""} onChange={e=>setEditData(p=>({...p,diagnostico:e.target.value}))} rows={4} style={{...inp,resize:"vertical",fontFamily:"inherit",fontSize:13,lineHeight:1.6}} />
+                </>
+              : <>
+                  <p style={{fontSize:14,color:C.text,margin:0,lineHeight:1.7}}>{(editData||result).resumoMarca}</p>
+                  {(editData||result).diagnostico&&<p style={{fontSize:13,color:C.muted,margin:"8px 0 0",lineHeight:1.6}}>{(editData||result).diagnostico}</p>}
+                </>
+            }
           </div>
           <div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
-            <div style={{fontSize:9,fontWeight:800,color:"#FFD580",letterSpacing:3,marginBottom:10,textTransform:"uppercase"}}>Estratégia Sugerida</div>
-            <p style={{fontSize:14,color:C.text,margin:0,lineHeight:1.7}}>{result.estrategiaGeral}</p>
+            <div style={{fontSize:9,fontWeight:800,color:"#FFD580",letterSpacing:3,marginBottom:10,textTransform:"uppercase"}}>Estratégia Geral</div>
+            {editMode
+              ? <textarea value={editData?.estrategiaGeral||""} onChange={e=>setEditData(p=>({...p,estrategiaGeral:e.target.value}))} rows={8} style={{...inp,resize:"vertical",fontFamily:"inherit",fontSize:13,lineHeight:1.6}} />
+              : <p style={{fontSize:14,color:C.text,margin:0,lineHeight:1.7}}>{(editData||result).estrategiaGeral}</p>
+            }
           </div>
         </div>
+
+        {/* Identidade editável */}
+        {editMode&&<div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px",marginBottom:14}}>
+          <div style={{fontSize:9,fontWeight:800,color:"#F5A623",letterSpacing:3,marginBottom:14,textTransform:"uppercase"}}>Identidade — Editar</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+            {[["Slogan","slogan"],["Missão","missao"],["Visão","visao"],["Valores","valores"],["Diferenciais","diferenciais"],["Hashtags","hashtags"]].map(([l,k])=>(
+              <div key={k}>
+                <label style={{fontSize:10,color:C.muted,display:"block",marginBottom:3,fontWeight:700,letterSpacing:.5,textTransform:"uppercase"}}>{l}</label>
+                <textarea value={editData?.[k]||""} onChange={e=>setEditData(p=>({...p,[k]:e.target.value}))} rows={2} style={{...inp,resize:"vertical",fontFamily:"inherit",fontSize:12,lineHeight:1.5}} />
+              </div>
+            ))}
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+            {[["Cor Primária","corPrimaria"],["Cor Secundária","corSecundaria"],["Cor Acento","corAcento"]].map(([l,k])=>(
+              <div key={k} style={{display:"flex",alignItems:"center",gap:8}}>
+                <input type="color" value={editData?.[k]||"#1565C0"} onChange={e=>setEditData(p=>({...p,[k]:e.target.value}))} style={{width:36,height:36,border:"none",borderRadius:8,cursor:"pointer",background:"none"}} />
+                <div>
+                  <div style={{fontSize:10,color:C.muted,fontWeight:700}}>{l}</div>
+                  <div style={{fontSize:12,color:C.text}}>{editData?.[k]||"—"}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>}
 
         {/* Identity preview */}
         <div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px",marginBottom:14}}>
@@ -1652,6 +1704,201 @@ Responda:
       <Sec title="WhatsApp Business API (Meta)" accent="#25D366"><G2 ch={[<F label="WABA ID"><I k="waBaId" ph="000000000000" /></F>,<F label="Phone Number ID"><I k="waPhoneId" ph="000000000000" /></F>]} /><F label="Access Token"><TA k="waApiToken" ph="EAAxxxx…" rows={2} /></F></Sec>
       <Sec title="ManyChat" accent={C.purple}><G2 ch={[<F label="API Key"><I k="mcApiKey" type="password" ph="••••••" /></F>,<F label="Bot ID"><I k="mcBotId" ph="0000000" /></F>]} /><F label="Fluxos ativos"><TA k="mcFlows" ph="Boas-vindas, nutrição, respostas…" rows={2} /></F></Sec>
       <Sec title="Canva + N8n + Super Agentes" accent={C.gold}><G2 ch={[<F label="Brand Kit ID"><I k="canvaKitId" ph="DAFxxxx" /></F>,<F label="Pasta templates"><I k="canvaFolder" ph="https://canva.com/folder/…" /></F>]} /><G2 ch={[<F label="N8n Webhook"><I k="n8nWebhook" ph="https://…/webhook/…" /></F>,<F label="Super Agentes ID"><I k="superAgentesId" ph="agent-xxxx" /></F>]} /><F label="Google Drive"><I k="driveFolder" ph="https://drive.google.com/…" /></F></Sec>
+    </>;
+  }
+
+  // ─── CAMPANHAS ────────────────────────────────────────────────────────────
+  function TabCampanhas(){
+    const [campanhas, setCampanhas] = useState(form.campanhas||[]);
+    const [view, setView] = useState("lista"); // lista | nova
+    const [tipo, setTipo] = useState("whatsapp"); // whatsapp | email | linkedin
+    const [nova, setNova] = useState({nome:"",assunto:"",mensagem:"",publico:"todos",agendada:false,dataEnvio:"",horario:"",status:"rascunho"});
+    const [sending, setSending] = useState(false);
+
+    function saveCampanha(status="rascunho"){
+      const c = {...nova, id:Date.now(), tipo, status, criada:new Date().toISOString(), enviadas:0, abertas:0, cliques:0};
+      const upd = [...campanhas, c];
+      setCampanhas(upd); setForm(p=>({...p,campanhas:upd})); save();
+      setView("lista"); setNova({nome:"",assunto:"",mensagem:"",publico:"todos",agendada:false,dataEnvio:"",horario:"",status:"rascunho"});
+      flash(status==="enviando"?"🚀 Campanha enviada!":"💾 Rascunho salvo","teal");
+    }
+
+    async function enviarAgora(){
+      if(!nova.nome||!nova.mensagem) return;
+      setSending(true);
+      if(tipo==="whatsapp"){
+        try {
+          await fetch("/api/whatsapp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:`📢 *${nova.nome}*\n\n${nova.mensagem}`})});
+        } catch {}
+      }
+      saveCampanha("enviada");
+      setSending(false);
+    }
+
+    const ST = {
+      rascunho:{label:"Rascunho",cor:"#888"},
+      agendada:{label:"Agendada",cor:"#FFD580"},
+      enviada:{label:"Enviada",cor:"#A8E6A3"},
+      enviando:{label:"Enviando",cor:T.primaryL},
+      pausada:{label:"Pausada",cor:"#FF9090"},
+    };
+
+    const TIPOS = [
+      {id:"whatsapp",icon:"🟢",label:"WhatsApp",desc:"Disparo via Zapi"},
+      {id:"email",icon:"📧",label:"E-mail",desc:"SMTP / SendGrid"},
+      {id:"linkedin",icon:"🔷",label:"LinkedIn",desc:"Post + mensagem"},
+    ];
+
+    return <>
+      {/* Header */}
+      <div style={{marginBottom:16,padding:"20px 22px",background:G.glow,border:`1px solid ${T.primary}20`,borderRadius:16,position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",top:-30,right:-30,width:120,height:120,background:`radial-gradient(circle,${T.primary}18,transparent 70%)`}} />
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{display:"flex",alignItems:"center",gap:14}}>
+            <div style={{width:48,height:48,borderRadius:12,background:G.primary,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Megaphone size={22} color="#fff" strokeWidth={2}/></div>
+            <div>
+              <div style={{fontSize:18,fontWeight:700,background:G.hero,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>Central de Campanhas</div>
+              <div style={{fontSize:12,color:C.muted,marginTop:2}}>Crie e gerencie disparos de WhatsApp, e-mail e LinkedIn em um só lugar.</div>
+            </div>
+          </div>
+          {view==="lista"&&<button onClick={()=>setView("nova")} style={{background:G.primary,color:"#fff",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",gap:6,flexShrink:0}}><Plus size={14}/> Nova Campanha</button>}
+          {view==="nova"&&<button onClick={()=>setView("lista")} style={{background:C.surf3,color:C.text,border:`1px solid ${C.border}`,padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13,display:"flex",alignItems:"center",gap:6,flexShrink:0}}><X size={14}/> Cancelar</button>}
+        </div>
+      </div>
+
+      {/* Métricas rápidas */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
+        {[
+          ["Total",campanhas.length,"📊"],
+          ["Enviadas",campanhas.filter(c=>c.status==="enviada").length,"✅"],
+          ["Agendadas",campanhas.filter(c=>c.status==="agendada").length,"📅"],
+          ["Rascunhos",campanhas.filter(c=>c.status==="rascunho").length,"📝"],
+        ].map(([l,v,i])=>(
+          <div key={l} style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
+            <div style={{fontSize:22,marginBottom:4}}>{i}</div>
+            <div style={{fontSize:22,fontWeight:800,color:C.text}}>{v}</div>
+            <div style={{fontSize:11,color:C.muted}}>{l}</div>
+          </div>
+        ))}
+      </div>
+
+      {view==="lista"&&<>
+        {campanhas.length===0
+          ? <div style={{textAlign:"center",padding:"60px 0",color:C.muted}}>
+              <Megaphone size={40} color={C.muted} style={{margin:"0 auto 12px"}} />
+              <div style={{fontSize:16,fontWeight:600,marginBottom:6}}>Nenhuma campanha criada ainda</div>
+              <div style={{fontSize:13}}>Clique em "Nova Campanha" para começar</div>
+            </div>
+          : campanhas.map(c=>(
+            <div key={c.id} style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:13,padding:"16px 18px",marginBottom:10}}>
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                    <span style={{fontSize:16}}>{TIPOS.find(t=>t.id===c.tipo)?.icon||"📢"}</span>
+                    <span style={{fontSize:15,fontWeight:700,color:C.text}}>{c.nome}</span>
+                    <span style={{fontSize:10,background:`${ST[c.status]?.cor||"#888"}20`,color:ST[c.status]?.cor||"#888",padding:"2px 8px",borderRadius:20,fontWeight:700}}>{ST[c.status]?.label}</span>
+                  </div>
+                  <div style={{fontSize:12,color:C.muted,lineHeight:1.5,marginBottom:8}}>{c.mensagem?.slice(0,120)}{c.mensagem?.length>120?"…":""}</div>
+                  <div style={{display:"flex",gap:16,fontSize:11,color:C.muted}}>
+                    <span>📅 {c.agendada?`${c.dataEnvio} ${c.horario}`:new Date(c.criada).toLocaleDateString("pt-BR")}</span>
+                    <span>📤 {c.enviadas} enviadas</span>
+                    <span>👁 {c.abertas} abertas</span>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:6,flexShrink:0}}>
+                  {c.status==="rascunho"&&<button onClick={()=>{setNova(c);setTipo(c.tipo);setView("nova");}} style={{background:`${T.primary}15`,color:T.primaryL,border:"none",padding:"6px 12px",borderRadius:7,cursor:"pointer",fontSize:12,fontWeight:600}}>Editar</button>}
+                  <button onClick={()=>{const upd=campanhas.filter(x=>x.id!==c.id);setCampanhas(upd);setForm(p=>({...p,campanhas:upd}));save();}} style={{background:"#FF444415",color:"#FF7070",border:"none",padding:"6px 10px",borderRadius:7,cursor:"pointer"}}><Trash2 size={13}/></button>
+                </div>
+              </div>
+            </div>
+          ))
+        }
+      </>}
+
+      {view==="nova"&&<div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"20px 22px"}}>
+        <div style={{fontSize:12,fontWeight:800,color:T.primaryL,letterSpacing:2,textTransform:"uppercase",marginBottom:16}}>Nova Campanha</div>
+
+        {/* Tipo de canal */}
+        <div style={{marginBottom:16}}>
+          <label style={{fontSize:11,fontWeight:700,color:C.muted,display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>Canal de envio</label>
+          <div style={{display:"flex",gap:8}}>
+            {TIPOS.map(t=>(
+              <button key={t.id} onClick={()=>setTipo(t.id)} style={{flex:1,background:tipo===t.id?`${T.primary}20`:C.surf3,border:`1px solid ${tipo===t.id?T.primary:C.border2}`,borderRadius:10,padding:"10px",cursor:"pointer",textAlign:"center"}}>
+                <div style={{fontSize:20,marginBottom:4}}>{t.icon}</div>
+                <div style={{fontSize:12,fontWeight:700,color:tipo===t.id?T.primaryL:C.text}}>{t.label}</div>
+                <div style={{fontSize:10,color:C.muted}}>{t.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:C.muted,display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:.5}}>Nome da campanha *</label>
+            <input value={nova.nome} onChange={e=>setNova(p=>({...p,nome:e.target.value}))} placeholder="Ex: Promoção de Junho" style={{...inp,fontFamily:"inherit",fontSize:13}} />
+          </div>
+          {tipo==="email"&&<div>
+            <label style={{fontSize:11,fontWeight:700,color:C.muted,display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:.5}}>Assunto do e-mail *</label>
+            <input value={nova.assunto} onChange={e=>setNova(p=>({...p,assunto:e.target.value}))} placeholder="Ex: 🎉 Oferta exclusiva para você!" style={{...inp,fontFamily:"inherit",fontSize:13}} />
+          </div>}
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:C.muted,display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:.5}}>Público-alvo</label>
+            <select value={nova.publico} onChange={e=>setNova(p=>({...p,publico:e.target.value}))} style={{...inp,fontFamily:"inherit",fontSize:13}}>
+              <option value="todos">Todos os contatos</option>
+              {(form.publicos||[]).map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div style={{marginBottom:12}}>
+          <label style={{fontSize:11,fontWeight:700,color:C.muted,display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:.5}}>
+            {tipo==="whatsapp"?"Mensagem *":tipo==="linkedin"?"Texto do Post *":"Corpo do E-mail *"}
+          </label>
+          <textarea value={nova.mensagem} onChange={e=>setNova(p=>({...p,mensagem:e.target.value}))} rows={7}
+            placeholder={tipo==="whatsapp"
+              ?"Escreva a mensagem WhatsApp. Use *negrito*, _itálico_.\n\nEx:\n🎉 Olá! Temos uma novidade especial para você...\n\n👉 Acesse: seusite.com.br"
+              :tipo==="linkedin"
+              ?"Escreva o post do LinkedIn. Seja profissional e direto.\n\nEx:\n🚀 Estamos muito felizes em anunciar..."
+              :"Escreva o corpo do e-mail em HTML ou texto simples."}
+            style={{...inp,resize:"vertical",fontFamily:"inherit",fontSize:13,lineHeight:1.6}} />
+          <div style={{fontSize:11,color:C.muted,marginTop:4}}>{nova.mensagem.length} caracteres{tipo==="whatsapp"&&nova.mensagem.length>1000&&<span style={{color:"#FF9090"}}> — mensagem longa, considere dividir</span>}</div>
+        </div>
+
+        {/* Agendamento */}
+        <div style={{background:C.surf3,borderRadius:10,padding:"12px 14px",marginBottom:16}}>
+          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:nova.agendada?10:0}}>
+            <input type="checkbox" checked={nova.agendada} onChange={e=>setNova(p=>({...p,agendada:e.target.checked}))} />
+            <span style={{fontSize:13,fontWeight:600,color:C.text}}>Agendar envio</span>
+            <span style={{fontSize:11,color:C.muted}}>— define data e hora para disparar automaticamente</span>
+          </label>
+          {nova.agendada&&<div style={{display:"flex",gap:10}}>
+            <div style={{flex:1}}>
+              <label style={{fontSize:10,color:C.muted,display:"block",marginBottom:3}}>Data</label>
+              <input type="date" value={nova.dataEnvio} onChange={e=>setNova(p=>({...p,dataEnvio:e.target.value}))} style={{...inp,fontFamily:"inherit",fontSize:13}} />
+            </div>
+            <div style={{flex:1}}>
+              <label style={{fontSize:10,color:C.muted,display:"block",marginBottom:3}}>Horário</label>
+              <input type="time" value={nova.horario} onChange={e=>setNova(p=>({...p,horario:e.target.value}))} style={{...inp,fontFamily:"inherit",fontSize:13}} />
+            </div>
+          </div>}
+        </div>
+
+        {/* Botões */}
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={()=>saveCampanha("rascunho")} style={{background:C.surf3,color:C.text,border:`1px solid ${C.border}`,padding:"10px 20px",borderRadius:9,cursor:"pointer",fontWeight:600,fontSize:13,display:"flex",alignItems:"center",gap:6}}><Save size={13}/> Salvar Rascunho</button>
+          {nova.agendada&&<button onClick={()=>saveCampanha("agendada")} disabled={!nova.dataEnvio} style={{background:`${T.primary}20`,color:T.primaryL,border:`1px solid ${T.primary}40`,padding:"10px 20px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",gap:6,opacity:nova.dataEnvio?1:.5}}><Calendar size={13}/> Agendar</button>}
+          {!nova.agendada&&<button onClick={enviarAgora} disabled={!nova.nome||!nova.mensagem||sending} style={{background:(!nova.nome||!nova.mensagem)?C.surf3:G.primary,color:(!nova.nome||!nova.mensagem)?C.muted:"#fff",border:"none",padding:"10px 24px",borderRadius:9,cursor:(!nova.nome||!nova.mensagem)?"default":"pointer",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",gap:6,boxShadow:(!nova.nome||!nova.mensagem)?"none":`0 4px 20px ${T.primary}40`}}>
+            {sending?<><RefreshCw size={13} style={{animation:"spin 1s linear infinite"}}/> Enviando…</>:<><Send size={13}/> Enviar Agora</>}
+          </button>}
+        </div>
+
+        {tipo==="email"&&<div style={{marginTop:12,background:`${T.primary}08`,border:`1px solid ${T.primary}20`,borderRadius:10,padding:"10px 14px",fontSize:12,color:C.muted}}>
+          📧 Para envio de e-mail configure o servidor SMTP ou integre com SendGrid / Mailgun na aba <strong style={{color:C.text}}>Integrações</strong>.
+        </div>}
+        {tipo==="linkedin"&&<div style={{marginTop:12,background:"#0A66C208",border:"1px solid #0A66C225",borderRadius:10,padding:"10px 14px",fontSize:12,color:C.muted}}>
+          🔷 Para publicar no LinkedIn configure o token de acesso LinkedIn API na aba <strong style={{color:C.text}}>Integrações</strong>.
+        </div>}
+      </div>}
     </>;
   }
 
