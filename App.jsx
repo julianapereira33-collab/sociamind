@@ -119,16 +119,15 @@ const EMPTY_DATA = {
 const TABS = [
   {id:"gerar",      Icon:Sparkles,      label:"Gerar"},
   {id:"scanner",    Icon:ScanLine,      label:"Scanner"},
+  {id:"resultados", Icon:BarChart2,     label:"Resultados"},
+  {id:"conteudo",   Icon:FileText,      label:"Conteúdo"},
   {id:"identidade", Icon:Palette,       label:"Identidade"},
   {id:"produtos",   Icon:Package,       label:"Produtos"},
   {id:"publicos",   Icon:Users,         label:"Públicos"},
-  {id:"conteudo",   Icon:FileText,      label:"Conteúdo"},
-  {id:"calendario", Icon:Calendar,      label:"Agenda"},
-  {id:"os",         Icon:CalendarClock, label:"Programados"},
   {id:"redes",      Icon:Smartphone,    label:"Redes"},
-  {id:"integracoes",Icon:Plug,          label:"Integrações"},
   {id:"mensagens",  Icon:MessageSquare, label:"Mensagens"},
   {id:"campanhas",  Icon:Megaphone,     label:"Campanhas"},
+  {id:"integracoes",Icon:Plug,          label:"Integrações"},
   {id:"cofre",      Icon:Lock,          label:"Cofre"},
 ];
 
@@ -400,12 +399,11 @@ export default function App() {
         <div style={{maxWidth:820,margin:"0 auto"}}>
           {tab==="gerar"       &&<TabGerar />}
           {tab==="scanner"     &&<TabScanner />}
+          {tab==="resultados"  &&<TabResultados />}
+          {tab==="conteudo"    &&<TabConteudo />}
           {tab==="identidade"  &&<TabIdentidade />}
           {tab==="produtos"    &&<TabProdutos />}
           {tab==="publicos"    &&<TabPublicos />}
-          {tab==="conteudo"    &&<TabConteudo />}
-          {tab==="os"          &&<TabOS />}
-          {tab==="calendario"  &&<TabCalendario />}
           {tab==="redes"       &&<TabRedes />}
           {tab==="integracoes" &&<TabIntegracoes />}
           {tab==="mensagens"   &&<TabMensagens />}
@@ -1500,194 +1498,375 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
     </>;
   }
 
-  // ─── CONTEÚDO ─────────────────────────────────────────────────────────────
+  // ─── CONTEÚDO HUB ─────────────────────────────────────────────────────────
   function TabConteudo(){
-    const pubs=form.publicos||[];
-    const pcList=form.perfilConteudo||[];
-    const [sel,setSel]=useState(pubs[0]?.id||null);
-    const pc=pcList.find(p=>p.publicoId===sel)||{};
-    const updPC=(k,v)=>{ const next=pcList.find(p=>p.publicoId===sel)?pcList.map(p=>p.publicoId===sel?{...p,[k]:v}:p):[...pcList,{publicoId:sel,[k]:v}]; upd("perfilConteudo",next); };
-    if(!pubs.length) return <div style={{background:C.surf,border:`1px dashed ${C.border2}`,borderRadius:14,padding:"40px",textAlign:"center"}}><div style={{fontSize:32,marginBottom:10}}>📋</div><div style={{color:C.muted}}>Crie públicos primeiro na aba Públicos</div></div>;
-    return <>
-      <h2 style={{margin:"0 0 6px",fontSize:18,fontWeight:700}}>📋 Perfil de Conteúdo por Público</h2>
-      <p style={{margin:"0 0 16px",fontSize:13,color:C.muted}}>Estratégia específica de conteúdo por segmento</p>
-      <div style={{display:"flex",gap:8,marginBottom:18,flexWrap:"wrap"}}>
-        {pubs.map(p=><button key={p.id} onClick={()=>setSel(p.id)} style={{padding:"6px 16px",borderRadius:20,cursor:"pointer",fontSize:12,border:`1px solid ${sel===p.id?co.color+"80":C.border2}`,background:sel===p.id?co.color+"18":C.surf,color:sel===p.id?co.color:C.muted,fontWeight:sel===p.id?700:400}}>{p.nome}</button>)}
-      </div>
-      {sel&&<>
-        <Sec title="Pilares de Conteúdo" accent={co.color}>
-          <F label="Tópicos frequentes"><textarea value={pc.topicosSempre||""} onChange={e=>updPC("topicosSempre",e.target.value)} placeholder="Transformações, dicas, bastidores, depoimentos..." rows={3} style={{...inp,resize:"vertical",lineHeight:1.6}} /></F>
-          <F label="Tópicos proibidos"><input value={pc.topicosNunca||""} onChange={e=>updPC("topicosNunca",e.target.value)} placeholder="Assuntos a evitar..." style={{...inp,fontFamily:"inherit"}} /></F>
-        </Sec>
-        <Sec title="Frequência por Tipo" accent={co.color}>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-            {[["Posts feed","freqFeed","5x/sem"],["Stories","freqStory","Diário"],["Reels","freqReel","3x/sem"],["WhatsApp","freqWa","Diário"],["TikTok","freqTt","3x/sem"],["Carrossel","freqCar","2x/sem"]].map(([l,k,ph])=>(
-              <F key={k} label={l}><input value={pc[k]||""} onChange={e=>updPC(k,e.target.value)} placeholder={ph} style={{...inp,fontFamily:"inherit"}} /></F>
-            ))}
-          </div>
-        </Sec>
-        <Sec title="Tom e Abordagem" accent={co.color}>
-          <F label="Tom de voz para este segmento"><textarea value={pc.tom||""} onChange={e=>updPC("tom",e.target.value)} placeholder="Como a marca fala com este público..." rows={2} style={{...inp,resize:"vertical"}} /></F>
-          <G2 ch={[<F label="Hashtags do segmento"><textarea value={pc.hashtags||""} onChange={e=>updPC("hashtags",e.target.value)} placeholder="#segmento…" rows={2} style={{...inp,resize:"vertical"}} /></F>,<F label="Hooks que funcionam"><textarea value={pc.hooks||""} onChange={e=>updPC("hooks",e.target.value)} placeholder='"Você sabia…" / "Em 30 dias…"' rows={2} style={{...inp,resize:"vertical"}} /></F>]} />
-        </Sec>
-      </>}
-    </>;
-  }
-
-  // ─── OS ───────────────────────────────────────────────────────────────────
-  function TabOS(){
+    const agenda=form.agenda||[];
     const ordens=form.ordens||[];
     const pubs=form.publicos||[];
-    const [nova,setNova]=useState(false);
-    const [os,setOs]=useState({tipo:"Promoção",titulo:"",briefing:"",publicoId:"",plataformas:[],prazo:"",urgente:false});
-    const togP=p=>setOs(o=>({...o,plataformas:o.plataformas.includes(p)?o.plataformas.filter(x=>x!==p):[...o.plataformas,p]}));
-    function addOS(){ upd("ordens",[...ordens,{...os,id:Date.now(),status:"Rascunho",em:new Date().toLocaleDateString("pt-BR")}]); setNova(false); setOs({tipo:"Promoção",titulo:"",briefing:"",publicoId:"",plataformas:[],prazo:"",urgente:false}); flash("✓ OS criada!","teal"); }
-    function updS(id,s){ upd("ordens",ordens.map(o=>o.id===id?{...o,status:s}:o)); }
-    function delOS(id){ upd("ordens",ordens.filter(o=>o.id!==id)); }
-    return <>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <div><h2 style={{margin:0,fontSize:18,fontWeight:700}}>🎫 Ordens de Serviço</h2><p style={{margin:"4px 0 0",fontSize:13,color:C.muted}}>Conteúdos extras fora do calendário regular</p></div>
-        <button onClick={()=>setNova(!nova)} style={{background:G.primary,color:"#fff",border:"none",padding:"9px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,boxShadow:`0 4px 18px ${T.primary}35`}}>+ Nova OS</button>
-      </div>
-      {nova&&<div style={{background:G.glow,border:`1px solid #F5A62325`,borderRadius:14,padding:"20px",marginBottom:18}}>
-        <G2 ch={[<F label="Tipo"><select value={os.tipo} onChange={e=>setOs(o=>({...o,tipo:e.target.value}))} style={{...inp,cursor:"pointer"}}>{OS_TYPES.map(t=><option key={t}>{t}</option>)}</select></F>,<F label="Título da peça"><input value={os.titulo} onChange={e=>setOs(o=>({...o,titulo:e.target.value}))} placeholder="Nome interno" style={{...inp,fontFamily:"inherit"}} /></F>]} />
-        <F label="Briefing detalhado" help="Texto, oferta, produto, imagem desejada — quanto mais detalhe, melhor o resultado"><textarea value={os.briefing} onChange={e=>setOs(o=>({...o,briefing:e.target.value}))} rows={4} style={{...inp,resize:"vertical",lineHeight:1.6}} /></F>
-        <G2 ch={[<F label="Público"><select value={os.publicoId} onChange={e=>setOs(o=>({...o,publicoId:e.target.value}))} style={{...inp,cursor:"pointer"}}><option value="">Todos</option>{pubs.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select></F>,<F label="Prazo"><input type="date" value={os.prazo} onChange={e=>setOs(o=>({...o,prazo:e.target.value}))} style={{...inp,fontFamily:"inherit"}} /></F>]} />
-        <F label="Plataformas"><div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{"Instagram,Facebook,TikTok,WhatsApp,Canal WA,Grupos WA,Stories,Reels".split(",").map(p=>{const on=os.plataformas.includes(p);return<button key={p} onClick={()=>togP(p)} style={{padding:"5px 13px",borderRadius:20,cursor:"pointer",fontSize:12,border:`1px solid ${on?"#F5A62380":C.border2}`,background:on?"#F5A62318":C.surf3,color:on?"#F5A623":C.muted,fontWeight:on?700:400}}>{p}</button>;})}</div></F>
-        <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,color:C.text,marginBottom:16}}><input type="checkbox" checked={os.urgente} onChange={e=>setOs(o=>({...o,urgente:e.target.checked}))} />🚨 Urgente — prioridade máxima</label>
-        <div style={{display:"flex",gap:10}}><button onClick={()=>setNova(false)} style={{background:"none",border:`1px solid ${C.border2}`,color:C.text,padding:"9px 20px",borderRadius:9,cursor:"pointer",fontSize:13}}>Cancelar</button><button onClick={addOS} disabled={!os.titulo} style={{background:G.primary,color:"#fff",border:"none",padding:"9px 24px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,opacity:os.titulo?1:.4,boxShadow:`0 4px 18px ${T.primary}35`}}>✓ Criar OS</button></div>
-      </div>}
-      {ordens.length===0&&!nova&&<div style={{background:C.surf,border:`1px dashed ${C.border2}`,borderRadius:14,padding:"40px",textAlign:"center"}}><div style={{fontSize:32,marginBottom:10}}>🎫</div><div style={{color:C.muted}}>Nenhuma OS criada</div></div>}
-      <div style={{display:"flex",flexDirection:"column",gap:10}}>
-        {[...ordens].reverse().map(o=>{const pub=pubs.find(p=>p.id==o.publicoId);const sc=OS_STATUS[o.status]||C.muted;return<div key={o.id} style={{background:C.surf,border:`1px solid ${o.urgente?"#FF456620":C.border}`,borderRadius:12,padding:"14px 16px"}}>
-          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10}}>
-            <div style={{flex:1}}>
-              <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:6}}>{o.urgente&&<Badge color="#E8890C">🚨 URGENTE</Badge>}<Badge color={co.color}>{o.tipo}</Badge><Badge color={sc}>{o.status}</Badge>{pub&&<span style={{fontSize:10,color:C.hint}}>👥 {pub.nome}</span>}</div>
-              <div style={{fontWeight:700,fontSize:13,marginBottom:4}}>{o.titulo}</div>
-              <div style={{fontSize:12,color:C.muted}}>{o.briefing?.slice(0,100)}{o.briefing?.length>100?"…":""}</div>
-              {o.prazo&&<div style={{fontSize:11,color:C.hint,marginTop:4}}>📅 {o.prazo}</div>}
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:5}}>
-              <select value={o.status} onChange={e=>updS(o.id,e.target.value)} style={{background:C.surf3,border:`1px solid ${C.border2}`,color:C.text,padding:"5px 8px",borderRadius:7,fontSize:11,cursor:"pointer"}}>
-                {Object.keys(OS_STATUS).map(s=><option key={s} value={s}>{s}</option>)}
-              </select>
-              <button onClick={()=>delOS(o.id)} style={{background:"none",border:"1px solid #F5A62335",color:"#F5A623",padding:"3px 10px",borderRadius:6,cursor:"pointer",fontSize:11}}>Excluir</button>
-            </div>
-          </div>
-        </div>;})}
-      </div>
-    </>;
-  }
-
-  // ─── CALENDÁRIO ───────────────────────────────────────────────────────────
-  function TabCalendario(){
-    const agenda=form.agenda||[];
-    const pubs=form.publicos||[];
-    const [novo,setNovo]=useState(false);
-    const [item,setItem]=useState({tipo:"Post Feed",titulo:"",legenda:"",publicoId:"",plataforma:"Instagram",data:"",hora:"09:00",status:"Rascunho"});
+    const pcList=form.perfilConteudo||[];
+    const [fase,setFase]=useState("solicitar");
     const [waP,setWaP]=useState(null);
     const [altMsg,setAltMsg]=useState("");
+    const [novaOS,setNovaOS]=useState(false);
+    const [os,setOs]=useState({tipo:"Post Feed",titulo:"",briefing:"",publicoId:"",plataformas:[],prazo:"",urgente:false});
+    const [novoItem,setNovoItem]=useState(false);
+    const [item,setItem]=useState({tipo:"Post Feed",titulo:"",legenda:"",publicoId:"",plataforma:"Instagram",data:"",hora:"09:00",status:"Rascunho"});
+    const [gerando,setGerando]=useState(false);
+    const [semana,setSemana]=useState(form.semanaGerada||null);
+    const [selPC,setSelPC]=useState(pubs[0]?.id||null);
+
+    const SC={"Rascunho":C.muted,"Ag. aprovação":"#A0C4FF","Alteração":"#E8890C","Aprovado":"#FFD580","Agendado":"#DDD6FE","Publicado":"#10B981"};
+    const PLATS=["Instagram","Facebook","TikTok","LinkedIn","WhatsApp","Canal WA","YouTube","Stories","Reels","Todas"];
+    const TIPOS_C=["Post Feed","Reel","Story","Carrossel","LinkedIn Post","TikTok","YouTube Short","WhatsApp","Email"];
+
+    const updS=(id,s,extra={})=>upd("agenda",agenda.map(a=>a.id===id?{...a,status:s,...extra}:a));
     const iu=(k,v)=>setItem(p=>({...p,[k]:v}));
-    function addItem(){ upd("agenda",[...agenda,{...item,id:Date.now()}]); setNovo(false); flash("✓ Adicionado ao calendário","teal"); }
-    function updS(id,s,extra={}){ upd("agenda",agenda.map(a=>a.id===id?{...a,status:s,...extra}:a)); }
+    const togP=p=>setOs(o=>({...o,plataformas:o.plataformas.includes(p)?o.plataformas.filter(x=>x!==p):[...o.plataformas,p]}));
+
+    function addOS(){
+      upd("ordens",[...ordens,{...os,id:Date.now(),status:"Pendente",em:new Date().toLocaleDateString("pt-BR")}]);
+      setNovaOS(false); setOs({tipo:"Post Feed",titulo:"",briefing:"",publicoId:"",plataformas:[],prazo:"",urgente:false});
+      flash("✓ OS criada! Vá em Programação para gerar o conteúdo.","teal");
+    }
+    function addItem(){
+      upd("agenda",[...agenda,{...item,id:Date.now()}]);
+      setNovoItem(false); flash("✓ Adicionado ao calendário","teal");
+    }
+    function addToAgenda(d){
+      const novo={...d,id:Date.now(),status:"Rascunho"};
+      upd("agenda",[...agenda,novo]);
+      flash("✓ Adicionado ao calendário para aprovação","teal");
+    }
+
     async function sendApproval(it){
       updS(it.id,"Ag. aprovação"); setWaP(it);
-      const msg =
-`🎯 *Aprovação de Conteúdo — ${co.name}*
-
-📌 *${it.titulo}*
-📅 ${it.data} às ${it.hora||"--:--"}
-📲 ${it.plataforma}
-
-📝 *Legenda:*
-${it.legenda}
-
----
-Responda:
-✅ *APROVAR* — para publicar
-✏️ *ALTERAR: [seu comentário]* — para solicitar mudança`;
-
-      try {
-        const r = await fetch('/api/whatsapp', {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ message: msg }),
-        });
-        const data = await r.json();
-        if(data.success) flash("✅ Enviado para WhatsApp!","teal");
-        else flash(`⚠️ Erro Zapi: ${data.error}`,"coral");
-      } catch { flash("⚠️ Erro ao conectar com o servidor","coral"); }
+      const msg=`🎯 *Aprovação de Conteúdo — ${co.name}*\n\n📌 *${it.titulo}*\n📅 ${it.data} às ${it.hora||"--:--"}\n📲 ${it.plataforma}\n\n📝 *Legenda:*\n${it.legenda}\n\n---\nResponda:\n✅ *APROVAR* — para publicar\n✏️ *ALTERAR: [comentário]* — para solicitar mudança`;
+      try{
+        const r=await fetch('/api/whatsapp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+        const d=await r.json();
+        if(d.success) flash("✅ Enviado para WhatsApp!","teal");
+        else flash(`⚠️ Erro: ${d.error}`,"coral");
+      }catch{ flash("⚠️ Erro ao enviar","coral"); }
     }
-    function approve(it){ updS(it.id,"Aprovado"); setWaP(null); flash("✅ Aprovado — será agendado!","teal"); }
+    function approve(it){ updS(it.id,"Aprovado"); setWaP(null); flash("✅ Aprovado!","teal"); }
     function reqChange(it){ if(!altMsg.trim()) return; updS(it.id,"Alteração",{alteracaoMsg:altMsg}); setAltMsg(""); setWaP(null); flash("✏️ Alteração registrada","gold"); }
-    const SC={"Rascunho":C.muted,"Ag. aprovação":"#A0C4FF","Alteração":"#E8890C","Aprovado":"#FFD580","Agendado":"#DDD6FE","Publicado":"#10B981"};
-    const plats=["Instagram","Facebook","TikTok","WhatsApp","Canal WA","Lista WA","Grupo WA","Stories","Reels","YouTube","Todas"];
-    return <>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <div><h2 style={{margin:0,fontSize:18,fontWeight:700}}>📅 Calendário Editorial</h2><p style={{margin:"4px 0 0",fontSize:13,color:C.muted}}>Planeje, aprove via WhatsApp e agende automaticamente</p></div>
-        <button onClick={()=>setNovo(!novo)} style={{background:G.primary,color:"#fff",border:"none",padding:"9px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,boxShadow:`0 4px 18px ${T.primary}35`}}>+ Adicionar</button>
-      </div>
 
-      {/* WA Approval */}
-      {waP&&<div style={{background:"#25D36608",border:"1px solid #25D36635",borderRadius:14,padding:"18px",marginBottom:18}}>
-        <div style={{fontSize:11,fontWeight:700,color:"#25D366",letterSpacing:2,marginBottom:12,textTransform:"uppercase"}}>📱 Preview — Mensagem enviada ao WhatsApp</div>
-        <div style={{background:"#0d1f0d",borderRadius:12,padding:"16px",maxWidth:380,marginBottom:14}}>
-          <div style={{fontSize:10,color:"#25D36680",marginBottom:8}}>📲 {form.waNome||form.responsavel||"Responsável"}</div>
-          <div style={{background:"#25D36618",borderRadius:"12px 12px 12px 2px",padding:"12px"}}>
-            <div style={{fontSize:13,color:C.text,fontWeight:700,marginBottom:6}}>🤖 Social Agent — Aprovação</div>
-            <div style={{fontSize:12,color:"#A0C0A0",lineHeight:1.6}}>
-              <div style={{marginBottom:3}}>📋 <strong style={{color:C.text}}>{waP.tipo}</strong> — {waP.plataforma}</div>
-              <div style={{marginBottom:3}}>📅 {waP.data} às {waP.hora}</div>
-              <div style={{marginBottom:8}}>{waP.legenda?.slice(0,100)||waP.titulo}…</div>
-              <div style={{borderTop:"1px solid #ffffff15",paddingTop:8,fontSize:11}}>Responda:<br/><strong style={{color:"#25D366"}}>✅ APROVAR</strong> ou <strong style={{color:"#F5A623"}}>✏️ sua alteração</strong></div>
-            </div>
+    async function gerarSemana(){
+      setGerando(true);
+      const hoje=new Date(); const dias=[];
+      for(let i=0;i<7;i++){const d=new Date(hoje);d.setDate(hoje.getDate()+i);dias.push(d.toISOString().slice(0,10));}
+      const pc=pcList[0]||{};
+      const prompt=`Você é um estrategista de conteúdo digital sênior. Crie uma programação semanal de conteúdo para a marca abaixo.
+
+EMPRESA: ${co.name}
+NICHO: ${co.niche}
+TOM DE VOZ: ${pc.tom||form.descricao||"profissional e próximo"}
+PILARES: ${pc.topicosSempre||form.topicosSempre||"educação, entretenimento, prova social"}
+HASHTAGS: ${pc.hashtags||form.hashtags||""}
+ORDENS DE SERVIÇO PENDENTES: ${ordens.filter(o=>o.status==="Pendente").map(o=>`${o.tipo}: ${o.titulo} — ${o.briefing?.slice(0,80)}`).join("; ")||"nenhuma"}
+
+Crie exatamente 7 posts, um por dia, para os dias: ${dias.join(", ")}.
+Varie os tipos: Post Feed, Story, Reel, Carrossel — e as plataformas: Instagram, Facebook, LinkedIn.
+Para cada post gere uma legenda COMPLETA e pronta para publicar.
+
+RETORNE APENAS JSON válido, sem texto antes ou depois:
+[
+  {
+    "data": "YYYY-MM-DD",
+    "tipo": "Post Feed|Reel|Story|Carrossel|LinkedIn Post",
+    "plataforma": "Instagram|Facebook|LinkedIn|TikTok",
+    "titulo": "título interno do post",
+    "legenda": "legenda completa pronta para publicar com emojis e call to action",
+    "hora": "HH:MM",
+    "pilar": "nome do pilar editorial",
+    "hook": "primeira frase chamativa"
+  }
+]`;
+      try{
+        const r=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:6000,messages:[{role:"user",content:prompt}]})});
+        const d=await r.json();
+        if(d.error) throw new Error(JSON.stringify(d.error));
+        const raw=d.content?.find(b=>b.type==="text")?.text||"";
+        const parsed=JSON.parse(raw.replace(/```json|```/g,"").trim());
+        setSemana(parsed); upd("semanaGerada",parsed);
+        flash("✅ Programação semanal gerada!","teal");
+      }catch(e){ flash(`❌ Erro: ${e.message}`,"coral"); }
+      setGerando(false);
+    }
+
+    const FASES=[
+      {id:"solicitar",label:"Solicitar",icon:"🎫",count:ordens.filter(o=>o.status==="Pendente").length},
+      {id:"semana",label:"Programação IA",icon:"🤖",count:semana?.length||0},
+      {id:"aprovacao",label:"Aprovação",icon:"✅",count:agenda.filter(a=>["Rascunho","Ag. aprovação","Alteração"].includes(a.status)).length},
+      {id:"agendados",label:"Agendados",icon:"📅",count:agenda.filter(a=>["Aprovado","Agendado"].includes(a.status)).length},
+      {id:"publicados",label:"Publicados",icon:"🚀",count:agenda.filter(a=>a.status==="Publicado").length},
+      {id:"estrategia",label:"Estratégia",icon:"📋",count:null},
+    ];
+
+    const pc=pcList.find(p=>p.publicoId===selPC)||{};
+    const updPC=(k,v)=>{const next=pcList.find(p=>p.publicoId===selPC)?pcList.map(p=>p.publicoId===selPC?{...p,[k]:v}:p):[...pcList,{publicoId:selPC,[k]:v}];upd("perfilConteudo",next);};
+
+    return <>
+      {/* Header */}
+      <div style={{marginBottom:16,padding:"18px 20px",background:G.glow,border:`1px solid ${T.primary}20`,borderRadius:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+          <div style={{width:44,height:44,borderRadius:11,background:G.primary,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><FileText size={20} color="#fff"/></div>
+          <div>
+            <div style={{fontSize:17,fontWeight:700,background:G.hero,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>Central de Conteúdo</div>
+            <div style={{fontSize:12,color:C.muted}}>Solicite → IA programa → Aprove via WhatsApp → Agende → Publique</div>
           </div>
         </div>
-        <div style={{display:"flex",gap:10,alignItems:"flex-end"}}>
-          <div style={{flex:1}}><label style={{fontSize:11,color:C.muted,display:"block",marginBottom:4}}>Simular resposta:</label><input value={altMsg} onChange={e=>setAltMsg(e.target.value)} placeholder="Alteração ou deixe vazio para aprovar…" style={{...inp,fontFamily:"inherit"}} /></div>
-          <button onClick={()=>approve(waP)} style={{background:"#25D366",color:"#fff",border:"none",padding:"9px 18px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,flexShrink:0}}>✅ Aprovar</button>
-          <button onClick={()=>reqChange(waP)} disabled={!altMsg} style={{background:altMsg?G.primary:"none",color:altMsg?"#fff":T.primaryXL,border:`1px solid ${T.border2}`,padding:"9px 18px",borderRadius:9,cursor:"pointer",fontWeight:600,fontSize:13,flexShrink:0,display:"flex",alignItems:"center",gap:6}}><Edit3 size={13}/> Solicitar alteração</button>
+        {/* Sub-nav */}
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {FASES.map(f=>(
+            <button key={f.id} onClick={()=>setFase(f.id)} style={{display:"flex",alignItems:"center",gap:5,padding:"7px 14px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:fase===f.id?700:500,border:`1px solid ${fase===f.id?T.primary:C.border2}`,background:fase===f.id?`${T.primary}20`:C.surf3,color:fase===f.id?T.primaryL:C.muted,transition:"all .15s"}}>
+              <span>{f.icon}</span><span>{f.label}</span>
+              {f.count>0&&<span style={{background:fase===f.id?T.primary:C.surf2,color:fase===f.id?"#fff":C.muted,fontSize:10,fontWeight:700,padding:"1px 6px",borderRadius:10}}>{f.count}</span>}
+            </button>
+          ))}
         </div>
-        <button onClick={()=>setWaP(null)} style={{marginTop:8,background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:11}}>Fechar</button>
-      </div>}
-
-      {novo&&<div style={{background:C.surf,border:`1px solid #F5A62325`,borderRadius:14,padding:"20px",marginBottom:18}}>
-        <G3 ch={[<F label="Tipo"><select value={item.tipo} onChange={e=>iu("tipo",e.target.value)} style={{...inp,cursor:"pointer"}}>{["Post Feed","Reel","Story","Carrossel","WhatsApp","Canal WA","Lista WA","Grupo WA","TikTok"].map(t=><option key={t}>{t}</option>)}</select></F>,<F label="Plataforma"><select value={item.plataforma} onChange={e=>iu("plataforma",e.target.value)} style={{...inp,cursor:"pointer"}}>{plats.map(t=><option key={t}>{t}</option>)}</select></F>,<F label="Público"><select value={item.publicoId} onChange={e=>iu("publicoId",e.target.value)} style={{...inp,cursor:"pointer"}}><option value="">Geral</option>{pubs.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select></F>]} />
-        <F label="Título"><input value={item.titulo} onChange={e=>iu("titulo",e.target.value)} placeholder="Nome interno" style={{...inp,fontFamily:"inherit"}} /></F>
-        <F label="Legenda / Texto" help="Pode ser gerado pela IA"><textarea value={item.legenda} onChange={e=>iu("legenda",e.target.value)} rows={3} style={{...inp,resize:"vertical",lineHeight:1.6}} /></F>
-        <G2 ch={[<F label="Data"><input type="date" value={item.data} onChange={e=>iu("data",e.target.value)} style={{...inp,fontFamily:"inherit"}} /></F>,<F label="Horário"><input type="time" value={item.hora} onChange={e=>iu("hora",e.target.value)} style={{...inp,fontFamily:"inherit"}} /></F>]} />
-        <div style={{display:"flex",gap:10,marginTop:8}}><button onClick={()=>setNovo(false)} style={{background:"none",border:`1px solid ${C.border2}`,color:C.text,padding:"9px 20px",borderRadius:9,cursor:"pointer",fontSize:13}}>Cancelar</button><button onClick={addItem} disabled={!item.titulo||!item.data} style={{background:G.primary,color:"#fff",border:"none",padding:"9px 24px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,boxShadow:`0 4px 18px ${T.primary}35`}}>✓ Adicionar</button></div>
-      </div>}
-
-      {/* Stats */}
-      {agenda.length>0&&<div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
-        {Object.entries(SC).map(([s,c])=>{const n=agenda.filter(a=>a.status===s).length;return n>0&&<Badge key={s} color={c}>{n} {s}</Badge>;})}
-        {agenda.some(a=>a.status==="Rascunho"||a.status==="Alteração")&&<button onClick={()=>{const p=agenda.find(a=>a.status==="Rascunho"||a.status==="Alteração");if(p)sendApproval(p);}} style={{marginLeft:"auto",background:G.primary,color:"#fff",border:"none",padding:"7px 16px",borderRadius:8,cursor:"pointer",fontWeight:600,fontSize:12,display:"flex",alignItems:"center",gap:6,fontFamily:"'Inter',sans-serif"}}><Send size={12}/> Enviar para aprovação</button>}
-      </div>}
-
-      {agenda.length===0&&!novo&&<div style={{background:C.surf,border:`1px dashed ${C.border2}`,borderRadius:14,padding:"40px",textAlign:"center"}}><div style={{fontSize:32,marginBottom:10}}>📅</div><div style={{color:C.muted}}>Calendário vazio</div></div>}
-
-      <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {[...agenda].sort((a,b)=>a.data>b.data?1:-1).map(a=>{
-          const pub=pubs.find(p=>p.id==a.publicoId);const sc=SC[a.status]||C.muted;
-          return <div key={a.id} style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:11,padding:"13px 16px",display:"flex",gap:12}}>
-            <div style={{width:3,background:sc,borderRadius:2,flexShrink:0}} />
-            <div style={{flex:1}}>
-              <div style={{display:"flex",gap:6,marginBottom:5,flexWrap:"wrap"}}><Badge color={co.color}>{a.tipo}</Badge><Badge color={C.blue}>{a.plataforma}</Badge><Badge color={sc}>{a.status}</Badge>{pub&&<span style={{fontSize:10,color:C.hint}}>👥 {pub.nome}</span>}</div>
-              <div style={{fontWeight:700,fontSize:13,marginBottom:2}}>{a.titulo}</div>
-              {a.legenda&&<div style={{fontSize:12,color:C.muted}}>{a.legenda.slice(0,80)}{a.legenda.length>80?"…":""}</div>}
-              {a.alteracaoMsg&&<div style={{fontSize:11,background:"#FF456615",border:"1px solid #FF456630",borderRadius:6,padding:"5px 9px",color:"#F5A623",marginTop:4}}>✏️ {a.alteracaoMsg}</div>}
-              <div style={{fontSize:11,color:C.hint,marginTop:4}}>📅 {a.data} {a.hora}</div>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:5,flexShrink:0}}>
-              {(a.status==="Rascunho"||a.status==="Alteração")&&<button onClick={()=>sendApproval(a)} style={{fontSize:11,background:"#25D36618",border:"1px solid #25D36640",color:"#25D366",padding:"4px 10px",borderRadius:7,cursor:"pointer",fontWeight:700}}>📱 WA</button>}
-              {a.status==="Aprovado"&&<button onClick={()=>updS(a.id,"Agendado")} style={{fontSize:11,background:C.purple+"18",border:`1px solid ${C.purple}40`,color:C.purple,padding:"4px 10px",borderRadius:7,cursor:"pointer",fontWeight:700}}>📅 Agendar</button>}
-              {a.status==="Agendado"&&<button onClick={()=>updS(a.id,"Publicado")} style={{fontSize:11,background:"#10B98118",border:"1px solid #10B98140",color:"#10B981",padding:"4px 10px",borderRadius:7,cursor:"pointer",fontWeight:700}}>✅ Pub</button>}
-              <button onClick={()=>upd("agenda",agenda.filter(x=>x.id!==a.id))} style={{fontSize:10,background:"none",border:"1px solid #F5A62335",color:"#F5A623",padding:"3px 8px",borderRadius:6,cursor:"pointer"}}>✕</button>
-            </div>
-          </div>;
-        })}
       </div>
+
+      {/* ── SOLICITAR ── */}
+      {fase==="solicitar"&&<>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div style={{fontSize:13,color:C.muted}}>Solicite conteúdos pontuais — a IA os incluirá na programação semanal</div>
+          <button onClick={()=>setNovaOS(!novaOS)} style={{background:G.primary,color:"#fff",border:"none",padding:"8px 18px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",gap:6}}><Plus size={13}/> Nova Solicitação</button>
+        </div>
+        {novaOS&&<div style={{background:C.surf,border:`1px solid ${T.primary}25`,borderRadius:14,padding:"18px 20px",marginBottom:16}}>
+          <G2 ch={[
+            <F label="Tipo de conteúdo"><select value={os.tipo} onChange={e=>setOs(o=>({...o,tipo:e.target.value}))} style={{...inp,cursor:"pointer"}}>{TIPOS_C.map(t=><option key={t}>{t}</option>)}</select></F>,
+            <F label="Título / tema"><input value={os.titulo} onChange={e=>setOs(o=>({...o,titulo:e.target.value}))} placeholder="Ex: Promoção dia das mães" style={{...inp,fontFamily:"inherit"}} /></F>
+          ]}/>
+          <F label="Briefing detalhado" help="Quanto mais detalhe, melhor o resultado da IA"><textarea value={os.briefing} onChange={e=>setOs(o=>({...o,briefing:e.target.value}))} rows={4} placeholder="Descreva o objetivo, produto, oferta, mensagem, referências visuais, link..." style={{...inp,resize:"vertical",lineHeight:1.6}} /></F>
+          <G2 ch={[
+            <F label="Público-alvo"><select value={os.publicoId} onChange={e=>setOs(o=>({...o,publicoId:e.target.value}))} style={{...inp,cursor:"pointer"}}><option value="">Todos</option>{pubs.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select></F>,
+            <F label="Prazo desejado"><input type="date" value={os.prazo} onChange={e=>setOs(o=>({...o,prazo:e.target.value}))} style={{...inp,fontFamily:"inherit"}} /></F>
+          ]}/>
+          <F label="Plataformas"><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {["Instagram","Facebook","TikTok","LinkedIn","WhatsApp","Stories","Reels","YouTube"].map(p=>{const on=os.plataformas.includes(p);return<button key={p} onClick={()=>togP(p)} style={{padding:"5px 12px",borderRadius:20,cursor:"pointer",fontSize:12,border:`1px solid ${on?T.primary+"80":C.border2}`,background:on?`${T.primary}18`:C.surf3,color:on?T.primaryL:C.muted,fontWeight:on?700:400}}>{p}</button>;})}
+          </div></F>
+          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,color:C.text,marginBottom:14}}><input type="checkbox" checked={os.urgente} onChange={e=>setOs(o=>({...o,urgente:e.target.checked}))} />🚨 Urgente — incluir na próxima programação</label>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>setNovaOS(false)} style={{background:"none",border:`1px solid ${C.border2}`,color:C.text,padding:"8px 18px",borderRadius:8,cursor:"pointer",fontSize:13}}>Cancelar</button>
+            <button onClick={addOS} disabled={!os.titulo} style={{background:os.titulo?G.primary:C.surf3,color:os.titulo?"#fff":C.muted,border:"none",padding:"8px 22px",borderRadius:8,cursor:os.titulo?"pointer":"default",fontWeight:700,fontSize:13}}>✓ Criar Solicitação</button>
+          </div>
+        </div>}
+        {ordens.length===0&&!novaOS&&<div style={{background:C.surf,border:`1px dashed ${C.border2}`,borderRadius:14,padding:"40px",textAlign:"center",color:C.muted}}>Nenhuma solicitação criada</div>}
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {[...ordens].reverse().map(o=>{
+            const pub=pubs.find(p=>p.id==o.publicoId);
+            return <div key={o.id} style={{background:C.surf,border:`1px solid ${o.urgente?"#FF456620":C.border}`,borderRadius:11,padding:"13px 16px"}}>
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:10}}>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:6}}>
+                    {o.urgente&&<Badge color="#E8890C">🚨 URGENTE</Badge>}
+                    <Badge color={T.primaryL}>{o.tipo}</Badge>
+                    <Badge color={o.status==="Pendente"?"#FFD580":"#A8E6A3"}>{o.status}</Badge>
+                    {pub&&<span style={{fontSize:10,color:C.muted}}>👥 {pub.nome}</span>}
+                  </div>
+                  <div style={{fontWeight:700,fontSize:13,marginBottom:3}}>{o.titulo}</div>
+                  <div style={{fontSize:12,color:C.muted}}>{o.briefing?.slice(0,120)}{o.briefing?.length>120?"…":""}</div>
+                  {o.prazo&&<div style={{fontSize:11,color:C.muted,marginTop:4}}>📅 Prazo: {o.prazo}</div>}
+                </div>
+                <div style={{display:"flex",gap:6,flexShrink:0}}>
+                  <select value={o.status} onChange={e=>upd("ordens",ordens.map(x=>x.id===o.id?{...x,status:e.target.value}:x))} style={{background:C.surf3,border:`1px solid ${C.border2}`,color:C.text,padding:"4px 8px",borderRadius:7,fontSize:11,cursor:"pointer"}}>
+                    {["Pendente","Em produção","Concluída","Cancelada"].map(s=><option key={s}>{s}</option>)}
+                  </select>
+                  <button onClick={()=>upd("ordens",ordens.filter(x=>x.id!==o.id))} style={{background:"#FF444415",border:"1px solid #FF444430",color:"#FF7070",padding:"4px 8px",borderRadius:7,cursor:"pointer"}}><Trash2 size={12}/></button>
+                </div>
+              </div>
+            </div>;
+          })}
+        </div>
+      </>}
+
+      {/* ── PROGRAMAÇÃO IA ── */}
+      {fase==="semana"&&<>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,gap:12,flexWrap:"wrap"}}>
+          <div>
+            <div style={{fontSize:14,fontWeight:600,color:C.text}}>Programação gerada pela IA para os próximos 7 dias</div>
+            <div style={{fontSize:12,color:C.muted,marginTop:2}}>
+              {ordens.filter(o=>o.status==="Pendente").length>0
+                ?`${ordens.filter(o=>o.status==="Pendente").length} solicitação(ões) pendente(s) serão incluídas`
+                :"A IA usará a estratégia da empresa para montar a semana"}
+            </div>
+          </div>
+          <button onClick={gerarSemana} disabled={gerando} style={{background:gerando?C.surf3:G.primary,color:gerando?C.muted:"#fff",border:"none",padding:"10px 22px",borderRadius:10,cursor:gerando?"default":"pointer",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",gap:8,boxShadow:gerando?"none":`0 4px 20px ${T.primary}40`}}>
+            {gerando?<><RefreshCw size={14} style={{animation:"spin 1s linear infinite"}}/> Gerando…</>:<><Sparkles size={14}/> Gerar Semana com IA</>}
+          </button>
+        </div>
+        {!semana&&!gerando&&<div style={{background:C.surf,border:`1px dashed ${C.border2}`,borderRadius:14,padding:"50px",textAlign:"center",color:C.muted}}>
+          <Sparkles size={32} color={C.muted} style={{margin:"0 auto 12px"}} />
+          <div style={{fontSize:15,fontWeight:600,marginBottom:6}}>Nenhuma programação gerada ainda</div>
+          <div style={{fontSize:13}}>Clique em "Gerar Semana com IA" para criar 7 posts prontos para aprovação</div>
+        </div>}
+        {semana&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {semana.map((d,i)=>(
+            <div key={i} style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:13,padding:"16px 18px"}}>
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
+                    <span style={{fontSize:11,fontWeight:800,color:T.primaryL,background:`${T.primary}18`,padding:"3px 10px",borderRadius:20}}>{new Date(d.data+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"short"})}</span>
+                    <Badge color={T.primaryL}>{d.tipo}</Badge>
+                    <Badge color={C.blue}>{d.plataforma}</Badge>
+                    {d.hora&&<span style={{fontSize:10,color:C.muted}}>🕐 {d.hora}</span>}
+                  </div>
+                  <div style={{fontWeight:700,fontSize:14,color:C.text,marginBottom:4}}>{d.titulo}</div>
+                  {d.hook&&<div style={{fontSize:13,color:T.primaryL,fontStyle:"italic",marginBottom:6}}>"{ d.hook}"</div>}
+                  <div style={{fontSize:13,color:C.muted,lineHeight:1.6,whiteSpace:"pre-wrap"}}>{d.legenda?.slice(0,200)}{d.legenda?.length>200?"…":""}</div>
+                  {d.pilar&&<div style={{fontSize:11,color:C.muted,marginTop:6}}>📌 Pilar: {d.pilar}</div>}
+                </div>
+                <button onClick={()=>addToAgenda(d)} style={{background:G.primary,color:"#fff",border:"none",padding:"8px 14px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0,display:"flex",alignItems:"center",gap:6}}><Plus size={12}/> Adicionar</button>
+              </div>
+            </div>
+          ))}
+          <div style={{textAlign:"center",padding:"10px 0"}}>
+            <button onClick={()=>{semana.forEach(d=>addToAgenda(d));flash("✅ Toda a semana adicionada ao calendário!","teal");}} style={{background:`${T.primary}15`,color:T.primaryL,border:`1px solid ${T.primary}30`,padding:"10px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>✅ Adicionar Semana Inteira ao Calendário</button>
+          </div>
+        </div>}
+      </>}
+
+      {/* ── APROVAÇÃO ── */}
+      {fase==="aprovacao"&&<>
+        {/* WA Preview */}
+        {waP&&<div style={{background:"#25D36608",border:"1px solid #25D36635",borderRadius:14,padding:"18px",marginBottom:16}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#25D366",letterSpacing:2,marginBottom:10,textTransform:"uppercase"}}>📱 Enviado para aprovação via WhatsApp</div>
+          <div style={{background:"#0d1f0d",borderRadius:12,padding:"14px",maxWidth:360,marginBottom:12}}>
+            <div style={{background:"#25D36618",borderRadius:"12px 12px 12px 2px",padding:"12px"}}>
+              <div style={{fontSize:12,color:"#A0C0A0",lineHeight:1.6}}>
+                <div style={{marginBottom:3}}>📋 <strong style={{color:C.text}}>{waP.tipo}</strong> — {waP.plataforma}</div>
+                <div style={{marginBottom:3}}>📅 {waP.data} às {waP.hora}</div>
+                <div>{waP.legenda?.slice(0,100)}…</div>
+              </div>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8,alignItems:"flex-end",flexWrap:"wrap"}}>
+            <div style={{flex:1}}><input value={altMsg} onChange={e=>setAltMsg(e.target.value)} placeholder="Alteração solicitada..." style={{...inp,fontFamily:"inherit",fontSize:13}} /></div>
+            <button onClick={()=>approve(waP)} style={{background:"#25D366",color:"#fff",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:13,flexShrink:0}}>✅ Aprovar</button>
+            <button onClick={()=>reqChange(waP)} disabled={!altMsg} style={{background:altMsg?G.primary:C.surf3,color:altMsg?"#fff":C.muted,border:"none",padding:"8px 16px",borderRadius:8,cursor:altMsg?"pointer":"default",fontWeight:600,fontSize:13,flexShrink:0}}>✏️ Solicitar</button>
+            <button onClick={()=>setWaP(null)} style={{background:"none",border:`1px solid ${C.border2}`,color:C.muted,padding:"8px 12px",borderRadius:8,cursor:"pointer",fontSize:12}}>Fechar</button>
+          </div>
+        </div>}
+
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,gap:10,flexWrap:"wrap"}}>
+          <div style={{fontSize:13,color:C.muted}}>{agenda.filter(a=>["Rascunho","Ag. aprovação","Alteração"].includes(a.status)).length} conteúdo(s) aguardando aprovação</div>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>setNovoItem(!novoItem)} style={{background:C.surf3,color:C.text,border:`1px solid ${C.border}`,padding:"7px 14px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:5}}><Plus size={12}/> Adicionar manual</button>
+            {agenda.some(a=>a.status==="Rascunho"||a.status==="Alteração")&&<button onClick={()=>{const p=agenda.find(a=>a.status==="Rascunho"||a.status==="Alteração");if(p)sendApproval(p);}} style={{background:"#25D36618",color:"#25D366",border:"1px solid #25D36635",padding:"7px 14px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:5}}><Send size={12}/> Enviar WA</button>}
+          </div>
+        </div>
+
+        {novoItem&&<div style={{background:C.surf,border:`1px solid ${T.primary}20`,borderRadius:13,padding:"18px",marginBottom:14}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
+            <F label="Tipo"><select value={item.tipo} onChange={e=>iu("tipo",e.target.value)} style={{...inp,cursor:"pointer"}}>{TIPOS_C.map(t=><option key={t}>{t}</option>)}</select></F>
+            <F label="Plataforma"><select value={item.plataforma} onChange={e=>iu("plataforma",e.target.value)} style={{...inp,cursor:"pointer"}}>{PLATS.map(t=><option key={t}>{t}</option>)}</select></F>
+            <F label="Público"><select value={item.publicoId} onChange={e=>iu("publicoId",e.target.value)} style={{...inp,cursor:"pointer"}}><option value="">Geral</option>{pubs.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select></F>
+          </div>
+          <F label="Título"><input value={item.titulo} onChange={e=>iu("titulo",e.target.value)} placeholder="Nome interno" style={{...inp,fontFamily:"inherit"}} /></F>
+          <F label="Legenda completa"><textarea value={item.legenda} onChange={e=>iu("legenda",e.target.value)} rows={4} style={{...inp,resize:"vertical",lineHeight:1.6}} /></F>
+          <G2 ch={[<F label="Data"><input type="date" value={item.data} onChange={e=>iu("data",e.target.value)} style={{...inp,fontFamily:"inherit"}} /></F>,<F label="Horário"><input type="time" value={item.hora} onChange={e=>iu("hora",e.target.value)} style={{...inp,fontFamily:"inherit"}} /></F>]}/>
+          <div style={{display:"flex",gap:8,marginTop:8}}>
+            <button onClick={()=>setNovoItem(false)} style={{background:"none",border:`1px solid ${C.border2}`,color:C.text,padding:"8px 18px",borderRadius:8,cursor:"pointer",fontSize:13}}>Cancelar</button>
+            <button onClick={addItem} disabled={!item.titulo||!item.data} style={{background:item.titulo&&item.data?G.primary:C.surf3,color:item.titulo&&item.data?"#fff":C.muted,border:"none",padding:"8px 22px",borderRadius:8,cursor:item.titulo&&item.data?"pointer":"default",fontWeight:700,fontSize:13}}>✓ Adicionar</button>
+          </div>
+        </div>}
+
+        {agenda.filter(a=>["Rascunho","Ag. aprovação","Alteração"].includes(a.status)).length===0&&!novoItem&&<div style={{background:C.surf,border:`1px dashed ${C.border2}`,borderRadius:14,padding:"40px",textAlign:"center",color:C.muted}}>Nenhum conteúdo aguardando aprovação</div>}
+
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {[...agenda].filter(a=>["Rascunho","Ag. aprovação","Alteração"].includes(a.status)).sort((a,b)=>a.data>b.data?1:-1).map(a=>{
+            const sc=SC[a.status]||C.muted;
+            return <div key={a.id} style={{background:C.surf,border:`1px solid ${a.status==="Alteração"?"#E8890C30":C.border}`,borderRadius:12,padding:"14px 16px",display:"flex",gap:10}}>
+              <div style={{width:3,background:sc,borderRadius:2,flexShrink:0}} />
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",gap:6,marginBottom:5,flexWrap:"wrap"}}><Badge color={T.primaryL}>{a.tipo}</Badge><Badge color={C.blue}>{a.plataforma}</Badge><Badge color={sc}>{a.status}</Badge></div>
+                <div style={{fontWeight:700,fontSize:13,marginBottom:2}}>{a.titulo}</div>
+                {a.legenda&&<div style={{fontSize:12,color:C.muted,lineHeight:1.4}}>{a.legenda.slice(0,120)}{a.legenda.length>120?"…":""}</div>}
+                {a.alteracaoMsg&&<div style={{fontSize:11,background:"#E8890C15",border:"1px solid #E8890C30",borderRadius:6,padding:"5px 9px",color:"#E8890C",marginTop:6}}>✏️ {a.alteracaoMsg}</div>}
+                <div style={{fontSize:11,color:C.muted,marginTop:4}}>📅 {a.data} {a.hora}</div>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:5,flexShrink:0}}>
+                <button onClick={()=>sendApproval(a)} style={{fontSize:11,background:"#25D36618",border:"1px solid #25D36640",color:"#25D366",padding:"4px 10px",borderRadius:7,cursor:"pointer",fontWeight:700}}>📱 WA</button>
+                <button onClick={()=>approve(a)} style={{fontSize:11,background:"#FFD58018",border:"1px solid #FFD58040",color:"#D4A017",padding:"4px 10px",borderRadius:7,cursor:"pointer",fontWeight:700}}>✅ OK</button>
+                <button onClick={()=>upd("agenda",agenda.filter(x=>x.id!==a.id))} style={{fontSize:10,background:"#FF444415",border:"1px solid #FF444430",color:"#FF7070",padding:"3px 8px",borderRadius:6,cursor:"pointer"}}><Trash2 size={11}/></button>
+              </div>
+            </div>;
+          })}
+        </div>
+      </>}
+
+      {/* ── AGENDADOS ── */}
+      {fase==="agendados"&&<>
+        <div style={{fontSize:13,color:C.muted,marginBottom:14}}>{agenda.filter(a=>["Aprovado","Agendado"].includes(a.status)).length} conteúdo(s) aprovado(s) e agendado(s)</div>
+        {agenda.filter(a=>["Aprovado","Agendado"].includes(a.status)).length===0&&<div style={{background:C.surf,border:`1px dashed ${C.border2}`,borderRadius:14,padding:"40px",textAlign:"center",color:C.muted}}>Nenhum conteúdo agendado ainda — aprove conteúdos na fase Aprovação</div>}
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {[...agenda].filter(a=>["Aprovado","Agendado"].includes(a.status)).sort((a,b)=>a.data>b.data?1:-1).map(a=>(
+            <div key={a.id} style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:12,padding:"13px 16px",display:"flex",gap:10,alignItems:"center"}}>
+              <div style={{width:3,background:SC[a.status],borderRadius:2,flexShrink:0,alignSelf:"stretch"}} />
+              <div style={{flex:1}}>
+                <div style={{display:"flex",gap:6,marginBottom:4,flexWrap:"wrap"}}><Badge color={T.primaryL}>{a.tipo}</Badge><Badge color={C.blue}>{a.plataforma}</Badge><Badge color={SC[a.status]}>{a.status}</Badge></div>
+                <div style={{fontWeight:700,fontSize:13}}>{a.titulo}</div>
+                <div style={{fontSize:11,color:C.muted,marginTop:3}}>📅 {a.data} às {a.hora}</div>
+              </div>
+              <div style={{display:"flex",gap:6,flexShrink:0}}>
+                {a.status==="Aprovado"&&<button onClick={()=>updS(a.id,"Agendado")} style={{fontSize:11,background:"#DDD6FE18",border:"1px solid #DDD6FE40",color:"#A78BFA",padding:"5px 12px",borderRadius:7,cursor:"pointer",fontWeight:700}}>📅 Agendar</button>}
+                {a.status==="Agendado"&&<button onClick={()=>updS(a.id,"Publicado")} style={{fontSize:11,background:"#10B98118",border:"1px solid #10B98140",color:"#10B981",padding:"5px 12px",borderRadius:7,cursor:"pointer",fontWeight:700}}>✅ Publicado</button>}
+                <button onClick={()=>upd("agenda",agenda.filter(x=>x.id!==a.id))} style={{background:"#FF444415",border:"1px solid #FF444430",color:"#FF7070",padding:"5px 8px",borderRadius:7,cursor:"pointer"}}><Trash2 size={12}/></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </>}
+
+      {/* ── PUBLICADOS ── */}
+      {fase==="publicados"&&<>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div style={{fontSize:13,color:C.muted}}>{agenda.filter(a=>a.status==="Publicado").length} conteúdo(s) publicado(s)</div>
+        </div>
+        {agenda.filter(a=>a.status==="Publicado").length===0&&<div style={{background:C.surf,border:`1px dashed ${C.border2}`,borderRadius:14,padding:"40px",textAlign:"center",color:C.muted}}>Nenhum conteúdo publicado ainda</div>}
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {[...agenda].filter(a=>a.status==="Publicado").sort((a,b)=>a.data<b.data?1:-1).map(a=>(
+            <div key={a.id} style={{background:C.surf,border:"1px solid #10B98125",borderRadius:11,padding:"12px 16px",display:"flex",gap:10,alignItems:"center"}}>
+              <div style={{width:3,background:"#10B981",borderRadius:2,alignSelf:"stretch",flexShrink:0}} />
+              <div style={{flex:1}}>
+                <div style={{display:"flex",gap:6,marginBottom:3,flexWrap:"wrap"}}><Badge color={T.primaryL}>{a.tipo}</Badge><Badge color={C.blue}>{a.plataforma}</Badge></div>
+                <div style={{fontWeight:600,fontSize:13,color:C.text}}>{a.titulo}</div>
+                <div style={{fontSize:11,color:C.muted,marginTop:2}}>✅ Publicado em {a.data}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </>}
+
+      {/* ── ESTRATÉGIA ── */}
+      {fase==="estrategia"&&<>
+        <div style={{fontSize:13,color:C.muted,marginBottom:14}}>Configure a estratégia de conteúdo por segmento de público</div>
+        {pubs.length===0
+          ?<div style={{background:C.surf,border:`1px dashed ${C.border2}`,borderRadius:14,padding:"40px",textAlign:"center",color:C.muted}}>Crie públicos na aba Públicos primeiro</div>
+          :<>
+            <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
+              {pubs.map(p=><button key={p.id} onClick={()=>setSelPC(p.id)} style={{padding:"6px 14px",borderRadius:20,cursor:"pointer",fontSize:12,border:`1px solid ${selPC===p.id?T.primary+"80":C.border2}`,background:selPC===p.id?`${T.primary}18`:C.surf,color:selPC===p.id?T.primaryL:C.muted,fontWeight:selPC===p.id?700:400}}>{p.nome}</button>)}
+            </div>
+            {selPC&&<>
+              <Sec title="Pilares de Conteúdo" accent={co.color}>
+                <F label="Tópicos frequentes"><textarea value={pc.topicosSempre||""} onChange={e=>updPC("topicosSempre",e.target.value)} placeholder="Transformações, dicas, bastidores, depoimentos..." rows={3} style={{...inp,resize:"vertical",lineHeight:1.6}} /></F>
+                <F label="Tópicos proibidos"><input value={pc.topicosNunca||""} onChange={e=>updPC("topicosNunca",e.target.value)} placeholder="Assuntos a evitar..." style={{...inp,fontFamily:"inherit"}} /></F>
+              </Sec>
+              <Sec title="Frequência por Tipo" accent={co.color}>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                  {[["Posts feed","freqFeed","5x/sem"],["Stories","freqStory","Diário"],["Reels","freqReel","3x/sem"],["WhatsApp","freqWa","Diário"],["TikTok","freqTt","3x/sem"],["LinkedIn","freqLi","2x/sem"]].map(([l,k,ph])=>(
+                    <F key={k} label={l}><input value={pc[k]||""} onChange={e=>updPC(k,e.target.value)} placeholder={ph} style={{...inp,fontFamily:"inherit"}} /></F>
+                  ))}
+                </div>
+              </Sec>
+              <Sec title="Tom e Abordagem" accent={co.color}>
+                <F label="Tom de voz"><textarea value={pc.tom||""} onChange={e=>updPC("tom",e.target.value)} placeholder="Como a marca fala com este público..." rows={2} style={{...inp,resize:"vertical"}} /></F>
+                <G2 ch={[<F label="Hashtags"><textarea value={pc.hashtags||""} onChange={e=>updPC("hashtags",e.target.value)} placeholder="#hashtag1…" rows={2} style={{...inp,resize:"vertical"}} /></F>,<F label="Hooks"><textarea value={pc.hooks||""} onChange={e=>updPC("hooks",e.target.value)} placeholder='"Você sabia…"' rows={2} style={{...inp,resize:"vertical"}} /></F>]}/>
+              </Sec>
+            </>}
+          </>}
+      </>}
     </>;
   }
 
@@ -1704,6 +1883,149 @@ Responda:
       <Sec title="WhatsApp Business API (Meta)" accent="#25D366"><G2 ch={[<F label="WABA ID"><I k="waBaId" ph="000000000000" /></F>,<F label="Phone Number ID"><I k="waPhoneId" ph="000000000000" /></F>]} /><F label="Access Token"><TA k="waApiToken" ph="EAAxxxx…" rows={2} /></F></Sec>
       <Sec title="ManyChat" accent={C.purple}><G2 ch={[<F label="API Key"><I k="mcApiKey" type="password" ph="••••••" /></F>,<F label="Bot ID"><I k="mcBotId" ph="0000000" /></F>]} /><F label="Fluxos ativos"><TA k="mcFlows" ph="Boas-vindas, nutrição, respostas…" rows={2} /></F></Sec>
       <Sec title="Canva + N8n + Super Agentes" accent={C.gold}><G2 ch={[<F label="Brand Kit ID"><I k="canvaKitId" ph="DAFxxxx" /></F>,<F label="Pasta templates"><I k="canvaFolder" ph="https://canva.com/folder/…" /></F>]} /><G2 ch={[<F label="N8n Webhook"><I k="n8nWebhook" ph="https://…/webhook/…" /></F>,<F label="Super Agentes ID"><I k="superAgentesId" ph="agent-xxxx" /></F>]} /><F label="Google Drive"><I k="driveFolder" ph="https://drive.google.com/…" /></F></Sec>
+    </>;
+  }
+
+  // ─── RESULTADOS ───────────────────────────────────────────────────────────
+  function TabResultados(){
+    const agenda=form.agenda||[];
+    const campanhas=form.campanhas||[];
+    const metricas=form.metricas||{};
+    const [periodo,setPeriodo]=useState("30d");
+    const [plat,setPlat]=useState("instagram");
+    const [editMet,setEditMet]=useState(false);
+    const [met,setMet]=useState(metricas[plat]||{});
+
+    useEffect(()=>{ setMet(metricas[plat]||{}); },[plat,metricas]);
+
+    function saveMet(){
+      const upd2={...metricas,[plat]:met};
+      upd("metricas",upd2); setEditMet(false); flash("✅ Métricas salvas","teal");
+    }
+
+    const totalPosts=agenda.filter(a=>a.status==="Publicado").length;
+    const totalStories=agenda.filter(a=>a.status==="Publicado"&&(a.tipo==="Story"||a.tipo==="Stories")).length;
+    const totalReels=agenda.filter(a=>a.status==="Publicado"&&a.tipo==="Reel").length;
+    const totalCamp=campanhas.filter(c=>c.status==="enviada").length;
+    const pendAprov=agenda.filter(a=>["Rascunho","Ag. aprovação","Alteração"].includes(a.status)).length;
+    const agendados=agenda.filter(a=>["Aprovado","Agendado"].includes(a.status)).length;
+
+    const PLATS=[
+      {id:"instagram",icon:"🟣",label:"Instagram"},
+      {id:"facebook",icon:"🔵",label:"Facebook"},
+      {id:"linkedin",icon:"🔷",label:"LinkedIn"},
+      {id:"tiktok",icon:"⚫",label:"TikTok"},
+      {id:"whatsapp",icon:"🟢",label:"WhatsApp"},
+    ];
+    const PERIODOS=[{id:"7d",label:"7 dias"},{id:"30d",label:"30 dias"},{id:"90d",label:"90 dias"},{id:"12m",label:"12 meses"}];
+
+    const CAMPOS_MET={
+      instagram:["seguidores","alcance","impressoes","engajamento","curtidas","comentarios","compartilhamentos","salvamentos","visitas_perfil","cliques_bio"],
+      facebook:["seguidores","alcance","impressoes","engajamento","curtidas","comentarios","compartilhamentos","cliques_link"],
+      linkedin:["seguidores","alcance","impressoes","engajamento","curtidas","comentarios","cliques"],
+      tiktok:["seguidores","visualizacoes","curtidas","comentarios","compartilhamentos","alcance"],
+      whatsapp:["contatos","mensagens_enviadas","mensagens_recebidas","taxa_abertura","conversoes"],
+    };
+
+    const campos=CAMPOS_MET[plat]||[];
+    const labelCampo=(k)=>({seguidores:"Seguidores",alcance:"Alcance",impressoes:"Impressões",engajamento:"Engajamento %",curtidas:"Curtidas",comentarios:"Comentários",compartilhamentos:"Compartilhamentos",salvamentos:"Salvamentos",visitas_perfil:"Visitas ao Perfil",cliques_bio:"Cliques na Bio",cliques_link:"Cliques no Link",cliques:"Cliques",visualizacoes:"Visualizações",conversoes:"Conversões",taxa_abertura:"Taxa de Abertura %",contatos:"Contatos",mensagens_enviadas:"Mensagens Enviadas",mensagens_recebidas:"Recebidas"}[k]||k);
+    const icone=(k)=>({seguidores:"👥",alcance:"📡",impressoes:"👁",engajamento:"💥",curtidas:"❤️",comentarios:"💬",compartilhamentos:"🔁",salvamentos:"🔖",visitas_perfil:"🏠",cliques_bio:"🔗",cliques_link:"🔗",cliques:"🖱",visualizacoes:"▶️",conversoes:"🎯",taxa_abertura:"📬",contatos:"📒",mensagens_enviadas:"📤",mensagens_recebidas:"📥"}[k]||"📊");
+
+    return <>
+      {/* Header */}
+      <div style={{marginBottom:16,padding:"18px 20px",background:G.glow,border:`1px solid ${T.primary}20`,borderRadius:16}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:44,height:44,borderRadius:11,background:G.primary,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><BarChart2 size={20} color="#fff"/></div>
+            <div>
+              <div style={{fontSize:17,fontWeight:700,background:G.hero,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>Dashboard de Resultados</div>
+              <div style={{fontSize:12,color:C.muted}}>Mensure crescimento, engajamento e performance das campanhas</div>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:6}}>
+            {PERIODOS.map(p=><button key={p.id} onClick={()=>setPeriodo(p.id)} style={{padding:"5px 12px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:periodo===p.id?700:400,border:`1px solid ${periodo===p.id?T.primary:C.border2}`,background:periodo===p.id?`${T.primary}20`:C.surf3,color:periodo===p.id?T.primaryL:C.muted}}>{p.label}</button>)}
+          </div>
+        </div>
+      </div>
+
+      {/* KPIs do sistema */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:16}}>
+        {[
+          {icon:"📝",label:"Posts Publicados",val:totalPosts,sub:"total no sistema",cor:T.primaryL},
+          {icon:"📖",label:"Stories",val:totalStories,sub:"publicados",cor:"#E1306C"},
+          {icon:"🎬",label:"Reels",val:totalReels,sub:"publicados",cor:"#833AB4"},
+          {icon:"📢",label:"Campanhas Enviadas",val:totalCamp,sub:"WhatsApp / E-mail",cor:"#25D366"},
+          {icon:"⏳",label:"Aguardando Aprovação",val:pendAprov,sub:"conteúdos",cor:"#FFD580"},
+          {icon:"📅",label:"Agendados",val:agendados,sub:"prontos para publicar",cor:"#A78BFA"},
+        ].map((k,i)=>(
+          <div key={i} style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:13,padding:"16px",textAlign:"center"}}>
+            <div style={{fontSize:24,marginBottom:6}}>{k.icon}</div>
+            <div style={{fontSize:28,fontWeight:800,color:k.cor,lineHeight:1}}>{k.val}</div>
+            <div style={{fontSize:12,fontWeight:600,color:C.text,marginTop:4}}>{k.label}</div>
+            <div style={{fontSize:10,color:C.muted,marginTop:2}}>{k.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Métricas por plataforma */}
+      <div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px",marginBottom:14}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:10}}>
+          <div style={{fontSize:11,fontWeight:800,color:T.primaryL,letterSpacing:2,textTransform:"uppercase"}}>Métricas por Plataforma — {PERIODOS.find(p=>p.id===periodo)?.label}</div>
+          <div style={{display:"flex",gap:6}}>
+            {!editMet
+              ?<button onClick={()=>setEditMet(true)} style={{background:C.surf3,color:C.text,border:`1px solid ${C.border}`,padding:"6px 14px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:5}}><Edit3 size={11}/> Editar</button>
+              :<><button onClick={saveMet} style={{background:G.primary,color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:5}}><Check size={11}/> Salvar</button>
+              <button onClick={()=>{setMet(metricas[plat]||{});setEditMet(false);}} style={{background:"#FF444415",color:"#FF7070",border:"1px solid #FF444430",padding:"6px 12px",borderRadius:8,cursor:"pointer",fontSize:12}}><X size={11}/></button></>
+            }
+          </div>
+        </div>
+
+        {/* Tabs de plataforma */}
+        <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
+          {PLATS.map(p=>(
+            <button key={p.id} onClick={()=>setPlat(p.id)} style={{display:"flex",alignItems:"center",gap:5,padding:"6px 14px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:plat===p.id?700:400,border:`1px solid ${plat===p.id?T.primary:C.border2}`,background:plat===p.id?`${T.primary}20`:C.surf3,color:plat===p.id?T.primaryL:C.muted}}>
+              <span>{p.icon}</span><span>{p.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Grid de métricas */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10}}>
+          {campos.map(k=>(
+            <div key={k} style={{background:C.surf3,border:`1px solid ${C.border2}`,borderRadius:11,padding:"14px"}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:editMet?8:6}}>
+                <span style={{fontSize:18}}>{icone(k)}</span>
+                <span style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:"uppercase",letterSpacing:.5}}>{labelCampo(k)}</span>
+              </div>
+              {editMet
+                ?<input type="number" value={met[k]||""} onChange={e=>setMet(p=>({...p,[k]:e.target.value}))} placeholder="0" style={{...inp,fontFamily:"inherit",fontSize:20,fontWeight:800,color:C.text,padding:"6px 10px"}} />
+                :<div style={{fontSize:26,fontWeight:800,color:met[k]?T.primaryL:C.muted}}>{met[k]?Number(met[k]).toLocaleString("pt-BR"):"—"}</div>
+              }
+            </div>
+          ))}
+        </div>
+
+        {!editMet&&campos.every(k=>!met[k])&&<div style={{textAlign:"center",padding:"20px 0",color:C.muted,fontSize:13}}>
+          Clique em "Editar" para inserir as métricas do período selecionado
+        </div>}
+      </div>
+
+      {/* Histórico de campanhas */}
+      {campanhas.length>0&&<div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px"}}>
+        <div style={{fontSize:11,fontWeight:800,color:T.primaryL,letterSpacing:2,textTransform:"uppercase",marginBottom:12}}>Histórico de Campanhas</div>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {[...campanhas].reverse().slice(0,5).map(c=>(
+            <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:C.surf3,borderRadius:9}}>
+              <span style={{fontSize:18}}>{c.tipo==="whatsapp"?"🟢":c.tipo==="email"?"📧":"🔷"}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:600,color:C.text}}>{c.nome}</div>
+                <div style={{fontSize:11,color:C.muted}}>{new Date(c.criada).toLocaleDateString("pt-BR")} · {c.enviadas} enviadas</div>
+              </div>
+              <span style={{fontSize:11,background:c.status==="enviada"?"#A8E6A318":"#FFD58018",color:c.status==="enviada"?"#A8E6A3":"#D4A017",padding:"3px 10px",borderRadius:20,fontWeight:700}}>{c.status}</span>
+            </div>
+          ))}
+        </div>
+      </div>}
     </>;
   }
 
