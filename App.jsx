@@ -8,7 +8,7 @@ import {
   CheckCircle, Clock, AlertCircle, XCircle, Send,
   Image, Megaphone, Settings, Eye, EyeOff, Trash2,
   Edit3, Star, TrendingUp, Globe, MessageSquare, Shield,
-  Linkedin, Mail, Radio, Check, X, RefreshCw, ChevronDown, ChevronUp
+  Linkedin, Mail, Radio, Check, X, RefreshCw, ChevronDown, ChevronUp, Upload
 } from "lucide-react";
 // inp is defined inside App() as a useMemo
 const FONT_URL = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Bebas+Neue&family=Anton&family=Abril+Fatface&family=Oswald:wght@600&family=Playfair+Display:ital,wght@0,700;1,400&family=Merriweather:wght@700&family=Montserrat:wght@700&family=Poppins:wght@400;600;700&family=Raleway:wght@700&family=Josefin+Sans:wght@700&family=Nunito:wght@800&family=DM+Sans:wght@700&family=Dancing+Script:wght@700&family=Pacifico&family=Lobster&family=Sacramento&family=Cormorant+Garamond:wght@700&family=Libre+Baskerville:wght@700&display=swap";
@@ -1514,6 +1514,18 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
     const [gerando,setGerando]=useState(false);
     const [semana,setSemana]=useState(form.semanaGerada||null);
     const [selPC,setSelPC]=useState(pubs[0]?.id||null);
+    // fluxo solicitar
+    const [abaOS,setAbaOS]=useState("briefing"); // briefing | imagens
+    const [imagens,setImagens]=useState([]);
+    const [imgInstrucao,setImgInstrucao]=useState("usar");
+    const [roteiro,setRoteiro]=useState(null);
+    const [gerandoRot,setGerandoRot]=useState(false);
+    const [roteiroEdit,setRoteiroEdit]=useState("");
+    const [roteiroAprov,setRoteiroAprov]=useState(false);
+    const [conteudoFinal,setConteudoFinal]=useState(null);
+    const [gerandoFinal,setGerandoFinal]=useState(false);
+    const [conteudoEdit,setConteudoEdit]=useState({titulo:"",legenda:"",hook:"",hashtags:"",cta:""});
+    const imgRef=useRef(null);
 
     const SC={"Rascunho":C.muted,"Ag. aprovação":"#A0C4FF","Alteração":"#E8890C","Aprovado":"#FFD580","Agendado":"#DDD6FE","Publicado":"#10B981"};
     const PLATS=["Instagram","Facebook","TikTok","LinkedIn","WhatsApp","Canal WA","YouTube","Stories","Reels","Todas"];
@@ -1525,8 +1537,120 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
 
     function addOS(){
       upd("ordens",[...ordens,{...os,id:Date.now(),status:"Pendente",em:new Date().toLocaleDateString("pt-BR")}]);
-      setNovaOS(false); setOs({tipo:"Post Feed",titulo:"",briefing:"",publicoId:"",plataformas:[],prazo:"",urgente:false});
-      flash("✓ OS criada! Vá em Programação para gerar o conteúdo.","teal");
+      setNovaOS(false);
+      setOs({tipo:"Post Feed",titulo:"",briefing:"",publicoId:"",plataformas:[],prazo:"",urgente:false});
+      setImagens([]); setRoteiro(null); setRoteiroAprov(false); setConteudoFinal(null);
+      flash("✓ Solicitação salva na lista!","teal");
+    }
+
+    function uploadImagens(e){
+      const files=Array.from(e.target.files);
+      files.forEach(f=>{
+        if(f.size>5*1024*1024){flash("⚠️ Imagem muito grande (máx 5MB)","coral");return;}
+        const reader=new FileReader();
+        reader.onload=ev=>{
+          setImagens(p=>[...p,{name:f.name,type:f.type,data:ev.target.result.split(",")[1],preview:ev.target.result}]);
+        };
+        reader.readAsDataURL(f);
+      });
+      e.target.value="";
+    }
+
+    async function gerarRoteiro(){
+      if(!os.briefing.trim()&&!os.titulo.trim()) return;
+      setGerandoRot(true); setRoteiro(null); setRoteiroAprov(false); setConteudoFinal(null);
+      const imgDesc=imagens.length>0?`\n\nIMENS ENVIADAS (${imagens.length}): O usuário enviou ${imagens.length} imagem(ns) com instrução: "${imgInstrucao==="usar"?"usar no post":imgInstrucao==="descrever"?"criar legenda descrevendo a imagem":"editar/recriar com base na imagem"}".`:"";
+      const prompt=`Você é um estrategista de conteúdo digital. Com base nas informações abaixo, crie um ROTEIRO CRIATIVO (conceito do post) — não a legenda final ainda, apenas o conceito e abordagem.
+
+EMPRESA: ${co.name} | NICHO: ${co.niche}
+TIPO DE CONTEÚDO: ${os.tipo}
+PLATAFORMAS: ${os.plataformas.join(", ")||"Instagram"}
+BRIEFING DO CLIENTE: ${os.briefing||os.titulo}${imgDesc}
+
+Retorne APENAS JSON:
+{
+  "conceito": "Conceito criativo do post em 2-3 frases",
+  "abordagem": "Como abordar o tema (educativo|entretenimento|prova social|oferta|bastidores)",
+  "hook": "Primeira frase/gancho que vai parar o scroll",
+  "estrutura": "Estrutura sugerida: ex: Hook → Problema → Solução → CTA",
+  "cta": "Call to action sugerido",
+  "formato_visual": "Sugestão de como deve ser visualmente",
+  "melhor_horario": "Melhor horário para publicar este tipo de post",
+  "observacoes": "Dica extra do estrategista"
+}`;
+      try{
+        const msgs=[{role:"user",content:imagens.length>0
+          ?[...imagens.map(img=>({type:"image",source:{type:"base64",media_type:img.type,data:img.data}})),{type:"text",text:prompt}]
+          :prompt}];
+        const r=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1500,messages:msgs})});
+        const d=await r.json();
+        if(d.error) throw new Error(JSON.stringify(d.error));
+        const raw=d.content?.find(b=>b.type==="text")?.text||"";
+        const parsed=JSON.parse(raw.replace(/```json|```/g,"").trim());
+        setRoteiro(parsed); setRoteiroEdit(parsed.conceito);
+      }catch(e){ flash(`❌ Erro: ${e.message}`,"coral"); }
+      setGerandoRot(false);
+    }
+
+    async function gerarConteudoFinal(){
+      if(!roteiro) return;
+      setGerandoFinal(true); setConteudoFinal(null);
+      const imgDesc=imagens.length>0?`\n\nO usuário enviou ${imagens.length} imagem(ns). Instrução: ${imgInstrucao==="usar"?"use a imagem como referência visual no post":imgInstrucao==="descrever"?"crie a legenda descrevendo o que está na imagem":imgInstrucao==="editar"?"o usuário quer que a imagem seja editada/adaptada — inclua orientações no post"}.`:"";
+      const prompt=`Você é um copywriter especialista em redes sociais. Crie o conteúdo COMPLETO e PRONTO para publicar.
+
+EMPRESA: ${co.name} | NICHO: ${co.niche}
+TIPO: ${os.tipo} | PLATAFORMAS: ${os.plataformas.join(", ")||"Instagram"}
+BRIEFING: ${os.briefing||os.titulo}
+ROTEIRO APROVADO: ${roteiroEdit||roteiro.conceito}
+HOOK: ${roteiro.hook}
+ESTRUTURA: ${roteiro.estrutura}
+CTA: ${roteiro.cta}${imgDesc}
+
+Retorne APENAS JSON:
+{
+  "titulo": "título interno para identificação",
+  "legenda": "legenda COMPLETA pronta para publicar, com emojis, quebras de linha, storytelling e call to action — mínimo 150 palavras",
+  "hook": "primeira frase do post (já incluída na legenda mas destacada aqui)",
+  "hashtags": "20 hashtags estratégicas separadas por espaço",
+  "cta": "call to action claro",
+  "texto_story": "versão curta para story (máx 3 linhas)",
+  "sugestao_visual": "descrição detalhada do que deve aparecer na imagem/vídeo",
+  "horario": "HH:MM",
+  "data": "${os.prazo||new Date(Date.now()+86400000).toISOString().slice(0,10)}"
+}`;
+      try{
+        const msgs=[{role:"user",content:imagens.length>0
+          ?[...imagens.map(img=>({type:"image",source:{type:"base64",media_type:img.type,data:img.data}})),{type:"text",text:prompt}]
+          :prompt}];
+        const r=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:3000,messages:msgs})});
+        const d=await r.json();
+        if(d.error) throw new Error(JSON.stringify(d.error));
+        const raw=d.content?.find(b=>b.type==="text")?.text||"";
+        const parsed=JSON.parse(raw.replace(/```json|```/g,"").trim());
+        setConteudoFinal(parsed);
+        setConteudoEdit({titulo:parsed.titulo,legenda:parsed.legenda,hook:parsed.hook,hashtags:parsed.hashtags,cta:parsed.cta});
+      }catch(e){ flash(`❌ Erro: ${e.message}`,"coral"); }
+      setGerandoFinal(false);
+    }
+
+    function aprovarEAgendar(){
+      const d={
+        ...conteudoEdit,
+        tipo:os.tipo,
+        plataforma:os.plataformas[0]||"Instagram",
+        publicoId:os.publicoId,
+        data:conteudoFinal?.data||os.prazo||new Date().toISOString().slice(0,10),
+        hora:conteudoFinal?.horario||"09:00",
+        status:"Rascunho",
+        id:Date.now(),
+        imagens:imagens.map(i=>({name:i.name,preview:i.preview})),
+      };
+      upd("agenda",[...agenda,d]);
+      // marca a OS como em produção
+      if(os.titulo) upd("ordens",ordens.map(o=>o.titulo===os.titulo?{...o,status:"Em produção"}:o));
+      setNovaOS(false); setRoteiro(null); setRoteiroAprov(false); setConteudoFinal(null); setImagens([]);
+      setFase("aprovacao");
+      flash("✅ Conteúdo criado e enviado para Aprovação!","teal");
     }
     function addItem(){
       upd("agenda",[...agenda,{...item,id:Date.now()}]);
@@ -1627,32 +1751,145 @@ RETORNE APENAS JSON válido, sem texto antes ou depois:
         </div>
       </div>
 
-      {/* ── SOLICITAR ── */}
+      {/* ── SOLICITAR (fluxo IA) ── */}
       {fase==="solicitar"&&<>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-          <div style={{fontSize:13,color:C.muted}}>Solicite conteúdos pontuais — a IA os incluirá na programação semanal</div>
-          <button onClick={()=>setNovaOS(!novaOS)} style={{background:G.primary,color:"#fff",border:"none",padding:"8px 18px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",gap:6}}><Plus size={13}/> Nova Solicitação</button>
+          <div style={{fontSize:13,color:C.muted}}>Descreva o conteúdo → IA gera roteiro → você aprova → IA cria o post completo</div>
+          <button onClick={()=>{setNovaOS(!novaOS);if(novaOS){setRoteiro(null);setRoteiroAprov(false);setConteudoFinal(null);setImagens([]);}}} style={{background:G.primary,color:"#fff",border:"none",padding:"8px 18px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",gap:6}}><Plus size={13}/> {novaOS?"Fechar":"Nova Solicitação"}</button>
         </div>
-        {novaOS&&<div style={{background:C.surf,border:`1px solid ${T.primary}25`,borderRadius:14,padding:"18px 20px",marginBottom:16}}>
-          <G2 ch={[
-            <F label="Tipo de conteúdo"><select value={os.tipo} onChange={e=>setOs(o=>({...o,tipo:e.target.value}))} style={{...inp,cursor:"pointer"}}>{TIPOS_C.map(t=><option key={t}>{t}</option>)}</select></F>,
-            <F label="Título / tema"><input value={os.titulo} onChange={e=>setOs(o=>({...o,titulo:e.target.value}))} placeholder="Ex: Promoção dia das mães" style={{...inp,fontFamily:"inherit"}} /></F>
-          ]}/>
-          <F label="Briefing detalhado" help="Quanto mais detalhe, melhor o resultado da IA"><textarea value={os.briefing} onChange={e=>setOs(o=>({...o,briefing:e.target.value}))} rows={4} placeholder="Descreva o objetivo, produto, oferta, mensagem, referências visuais, link..." style={{...inp,resize:"vertical",lineHeight:1.6}} /></F>
-          <G2 ch={[
-            <F label="Público-alvo"><select value={os.publicoId} onChange={e=>setOs(o=>({...o,publicoId:e.target.value}))} style={{...inp,cursor:"pointer"}}><option value="">Todos</option>{pubs.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select></F>,
-            <F label="Prazo desejado"><input type="date" value={os.prazo} onChange={e=>setOs(o=>({...o,prazo:e.target.value}))} style={{...inp,fontFamily:"inherit"}} /></F>
-          ]}/>
-          <F label="Plataformas"><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-            {["Instagram","Facebook","TikTok","LinkedIn","WhatsApp","Stories","Reels","YouTube"].map(p=>{const on=os.plataformas.includes(p);return<button key={p} onClick={()=>togP(p)} style={{padding:"5px 12px",borderRadius:20,cursor:"pointer",fontSize:12,border:`1px solid ${on?T.primary+"80":C.border2}`,background:on?`${T.primary}18`:C.surf3,color:on?T.primaryL:C.muted,fontWeight:on?700:400}}>{p}</button>;})}
-          </div></F>
-          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,color:C.text,marginBottom:14}}><input type="checkbox" checked={os.urgente} onChange={e=>setOs(o=>({...o,urgente:e.target.checked}))} />🚨 Urgente — incluir na próxima programação</label>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={()=>setNovaOS(false)} style={{background:"none",border:`1px solid ${C.border2}`,color:C.text,padding:"8px 18px",borderRadius:8,cursor:"pointer",fontSize:13}}>Cancelar</button>
-            <button onClick={addOS} disabled={!os.titulo} style={{background:os.titulo?G.primary:C.surf3,color:os.titulo?"#fff":C.muted,border:"none",padding:"8px 22px",borderRadius:8,cursor:os.titulo?"pointer":"default",fontWeight:700,fontSize:13}}>✓ Criar Solicitação</button>
+
+        {novaOS&&<div style={{background:C.surf,border:`1px solid ${T.primary}30`,borderRadius:14,padding:"20px",marginBottom:18}}>
+          {/* sub-abas: Briefing | Imagens */}
+          <div style={{display:"flex",gap:0,marginBottom:18,background:C.bg,borderRadius:10,padding:3,border:`1px solid ${C.border2}`}}>
+            {[["briefing","📝 Briefing"],["imagens",`🖼️ Imagens${imagens.length>0?" ("+imagens.length+")":""}`]].map(([k,l])=>(
+              <button key={k} onClick={()=>setAbaOS(k)} style={{flex:1,padding:"7px 0",borderRadius:8,border:"none",cursor:"pointer",fontWeight:abaOS===k?700:400,fontSize:13,background:abaOS===k?G.primary:"none",color:abaOS===k?"#fff":C.muted,transition:"all .2s"}}>{l}</button>
+            ))}
           </div>
+
+          {/* ABA BRIEFING */}
+          {abaOS==="briefing"&&<>
+            <G2 ch={[
+              <F label="Tipo de conteúdo"><select value={os.tipo} onChange={e=>setOs(o=>({...o,tipo:e.target.value}))} style={{...inp,cursor:"pointer"}}>{TIPOS_C.map(t=><option key={t}>{t}</option>)}</select></F>,
+              <F label="Título / tema"><input value={os.titulo} onChange={e=>setOs(o=>({...o,titulo:e.target.value}))} placeholder="Ex: Promoção dia das mães" style={{...inp,fontFamily:"inherit"}} /></F>
+            ]}/>
+            <F label="Briefing detalhado" help="Quanto mais detalhe, melhor o resultado da IA"><textarea value={os.briefing} onChange={e=>setOs(o=>({...o,briefing:e.target.value}))} rows={4} placeholder="Descreva o objetivo, produto, oferta, mensagem, tom de voz, referências visuais..." style={{...inp,resize:"vertical",lineHeight:1.6}} /></F>
+            <G2 ch={[
+              <F label="Público-alvo"><select value={os.publicoId} onChange={e=>setOs(o=>({...o,publicoId:e.target.value}))} style={{...inp,cursor:"pointer"}}><option value="">Todos</option>{pubs.map(p=><option key={p.id} value={p.id}>{p.nome}</option>)}</select></F>,
+              <F label="Prazo desejado"><input type="date" value={os.prazo} onChange={e=>setOs(o=>({...o,prazo:e.target.value}))} style={{...inp,fontFamily:"inherit"}} /></F>
+            ]}/>
+            <F label="Plataformas"><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {["Instagram","Facebook","TikTok","LinkedIn","WhatsApp","Stories","Reels","YouTube"].map(p=>{const on=os.plataformas.includes(p);return<button key={p} onClick={()=>togP(p)} style={{padding:"5px 12px",borderRadius:20,cursor:"pointer",fontSize:12,border:`1px solid ${on?T.primary+"80":C.border2}`,background:on?`${T.primary}18`:C.surf3,color:on?T.primaryL:C.muted,fontWeight:on?700:400}}>{p}</button>;})}
+            </div></F>
+            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,color:C.text,marginBottom:14}}><input type="checkbox" checked={os.urgente} onChange={e=>setOs(o=>({...o,urgente:e.target.checked}))} />🚨 Urgente</label>
+          </>}
+
+          {/* ABA IMAGENS */}
+          {abaOS==="imagens"&&<>
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:12,color:C.muted,marginBottom:8}}>Faça upload de 1 ou mais imagens e escolha o que a IA deve fazer com elas</div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
+                {[["usar","Usar no post"],["descrever","Criar legenda descrevendo a imagem"],["editar","Recriar/editar imagem"]].map(([k,l])=>(
+                  <button key={k} onClick={()=>setImgInstrucao(k)} style={{padding:"6px 14px",borderRadius:20,border:`1px solid ${imgInstrucao===k?T.primary+"80":C.border2}`,background:imgInstrucao===k?`${T.primary}18`:C.surf3,color:imgInstrucao===k?T.primaryL:C.muted,cursor:"pointer",fontSize:12,fontWeight:imgInstrucao===k?700:400}}>{l}</button>
+                ))}
+              </div>
+              <input ref={imgRef} type="file" accept="image/*" multiple style={{display:"none"}} onChange={uploadImagens} />
+              <button onClick={()=>imgRef.current?.click()} style={{background:`${T.primary}15`,border:`1px dashed ${T.primary}50`,color:T.primaryL,padding:"12px 20px",borderRadius:10,cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",gap:8,width:"100%",justifyContent:"center"}}><Upload size={16}/> Selecionar imagens (máx 5MB cada)</button>
+            </div>
+            {imagens.length>0&&<div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+              {imagens.map((img,i)=>(
+                <div key={i} style={{position:"relative",width:90,height:90,borderRadius:10,overflow:"hidden",border:`2px solid ${T.primary}40`}}>
+                  <img src={img.preview} alt={img.name} style={{width:"100%",height:"100%",objectFit:"cover"}} />
+                  <button onClick={()=>setImagens(p=>p.filter((_,j)=>j!==i))} style={{position:"absolute",top:2,right:2,background:"#00000080",border:"none",color:"#fff",borderRadius:50,width:20,height:20,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}><X size={10}/></button>
+                </div>
+              ))}
+            </div>}
+            {imagens.length===0&&<div style={{color:C.muted,fontSize:12,textAlign:"center",padding:"20px 0"}}>Nenhuma imagem carregada. Você pode gerar sem imagens.</div>}
+          </>}
+
+          {/* BOTÃO GERAR ROTEIRO */}
+          {!roteiro&&!gerandoRot&&(
+            <div style={{marginTop:16,display:"flex",gap:8}}>
+              <button onClick={()=>setNovaOS(false)} style={{background:"none",border:`1px solid ${C.border2}`,color:C.text,padding:"8px 18px",borderRadius:8,cursor:"pointer",fontSize:13}}>Cancelar</button>
+              <button onClick={gerarRoteiro} disabled={!os.briefing&&!os.titulo} style={{background:(os.briefing||os.titulo)?G.primary:C.surf3,color:(os.briefing||os.titulo)?"#fff":C.muted,border:"none",padding:"9px 22px",borderRadius:9,cursor:(os.briefing||os.titulo)?"pointer":"default",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",gap:8,flex:1,justifyContent:"center",boxShadow:`0 4px 18px ${T.primary}30`}}><Sparkles size={14}/> Gerar Roteiro com IA</button>
+            </div>
+          )}
+          {gerandoRot&&<div style={{textAlign:"center",padding:"20px",color:C.muted,fontSize:13}}><RefreshCw size={16} style={{animation:"spin 1s linear infinite",verticalAlign:"middle",marginRight:8}}/>Criando conceito criativo...</div>}
+
+          {/* CARD DO ROTEIRO */}
+          {roteiro&&!roteiroAprov&&<div style={{marginTop:16,background:C.bg,border:`1px solid ${T.primary}40`,borderRadius:12,padding:"16px 18px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+              <span style={{fontWeight:700,fontSize:14,color:T.primaryL}}>✨ Roteiro gerado pela IA</span>
+              <button onClick={gerarRoteiro} style={{background:"none",border:`1px solid ${C.border2}`,color:C.muted,padding:"4px 10px",borderRadius:7,cursor:"pointer",fontSize:11}}><RefreshCw size={11}/> Regerar</button>
+            </div>
+            <div style={{fontSize:12,color:C.muted,marginBottom:4}}>Conceito:</div>
+            <textarea value={roteiroEdit} onChange={e=>setRoteiroEdit(e.target.value)} rows={3} style={{...inp,width:"100%",fontSize:13,lineHeight:1.6,marginBottom:10,resize:"vertical"}} />
+            <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:12}}>
+              <div style={{flex:1,minWidth:160,background:C.surf,borderRadius:9,padding:"10px 12px"}}>
+                <div style={{fontSize:10,color:C.muted,fontWeight:700,marginBottom:4}}>GANCHO</div>
+                <div style={{fontSize:12,color:C.text,fontStyle:"italic"}}>"{roteiro.hook}"</div>
+              </div>
+              <div style={{flex:1,minWidth:160,background:C.surf,borderRadius:9,padding:"10px 12px"}}>
+                <div style={{fontSize:10,color:C.muted,fontWeight:700,marginBottom:4}}>ABORDAGEM</div>
+                <div style={{fontSize:12,color:T.primaryL}}>{roteiro.abordagem}</div>
+              </div>
+            </div>
+            <div style={{background:C.surf,borderRadius:9,padding:"10px 12px",marginBottom:12}}>
+              <div style={{fontSize:10,color:C.muted,fontWeight:700,marginBottom:4}}>ESTRUTURA</div>
+              <div style={{fontSize:12,color:C.text}}>{roteiro.estrutura}</div>
+            </div>
+            {roteiro.observacoes&&<div style={{fontSize:12,color:C.muted,fontStyle:"italic",marginBottom:12}}>💡 {roteiro.observacoes}</div>}
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{setRoteiro(null);setRoteiroAprov(false);}} style={{background:"none",border:`1px solid ${C.border2}`,color:C.text,padding:"8px 16px",borderRadius:8,cursor:"pointer",fontSize:13}}>← Voltar</button>
+              <button onClick={()=>setRoteiroAprov(true)} style={{background:G.primary,color:"#fff",border:"none",padding:"9px 22px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><Check size={14}/> Aprovei o Roteiro → Gerar Conteúdo</button>
+            </div>
+          </div>}
+
+          {/* GERAR CONTEÚDO FINAL */}
+          {roteiro&&roteiroAprov&&!conteudoFinal&&<div style={{marginTop:16}}>
+            {gerandoFinal
+              ?<div style={{textAlign:"center",padding:"24px",color:C.muted,fontSize:13}}><RefreshCw size={16} style={{animation:"spin 1s linear infinite",verticalAlign:"middle",marginRight:8}}/>Criando legenda, hashtags e CTA completos...</div>
+              :<div style={{background:C.bg,border:`1px solid ${T.primary}30`,borderRadius:12,padding:"16px",textAlign:"center"}}>
+                <div style={{color:T.primaryL,fontWeight:700,marginBottom:6}}>✅ Roteiro aprovado!</div>
+                <div style={{color:C.muted,fontSize:12,marginBottom:14}}>Agora a IA vai criar o post completo — legenda, hook, hashtags e CTA prontos para publicar.</div>
+                <button onClick={gerarConteudoFinal} style={{background:G.primary,color:"#fff",border:"none",padding:"10px 28px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14,display:"inline-flex",alignItems:"center",gap:8,boxShadow:`0 4px 20px ${T.primary}40`}}><Sparkles size={15}/> Gerar Conteúdo Agora</button>
+              </div>
+            }
+          </div>}
+
+          {/* CARD CONTEÚDO FINAL */}
+          {conteudoFinal&&<div style={{marginTop:16,background:C.bg,border:`1px solid #10b98140`,borderRadius:12,padding:"18px 20px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <span style={{fontWeight:700,fontSize:14,color:"#10b981"}}>🎯 Conteúdo pronto!</span>
+              <button onClick={()=>{setConteudoFinal(null);setRoteiroAprov(false);}} style={{background:"none",border:`1px solid ${C.border2}`,color:C.muted,padding:"4px 10px",borderRadius:7,cursor:"pointer",fontSize:11}}><RefreshCw size={11}/> Regerar</button>
+            </div>
+            <F label="Título interno"><input value={conteudoEdit.titulo} onChange={e=>setConteudoEdit(p=>({...p,titulo:e.target.value}))} style={{...inp,fontFamily:"inherit"}} /></F>
+            <F label="Legenda completa"><textarea value={conteudoEdit.legenda} onChange={e=>setConteudoEdit(p=>({...p,legenda:e.target.value}))} rows={7} style={{...inp,resize:"vertical",lineHeight:1.7,fontFamily:"inherit"}} /></F>
+            <G2 ch={[
+              <F label="Hook (1ª frase)"><input value={conteudoEdit.hook} onChange={e=>setConteudoEdit(p=>({...p,hook:e.target.value}))} style={{...inp,fontFamily:"inherit"}} /></F>,
+              <F label="CTA"><input value={conteudoEdit.cta} onChange={e=>setConteudoEdit(p=>({...p,cta:e.target.value}))} style={{...inp,fontFamily:"inherit"}} /></F>
+            ]}/>
+            <F label="Hashtags"><textarea value={conteudoEdit.hashtags} onChange={e=>setConteudoEdit(p=>({...p,hashtags:e.target.value}))} rows={2} style={{...inp,fontSize:12,lineHeight:1.7,resize:"vertical",fontFamily:"inherit"}} /></F>
+            {conteudoFinal.texto_story&&<div style={{background:C.surf,borderRadius:9,padding:"10px 12px",marginBottom:14}}>
+              <div style={{fontSize:10,color:C.muted,fontWeight:700,marginBottom:4}}>VERSÃO STORY</div>
+              <div style={{fontSize:12,color:C.text}}>{conteudoFinal.texto_story}</div>
+            </div>}
+            {conteudoFinal.sugestao_visual&&<div style={{background:`${T.primary}10`,borderRadius:9,padding:"10px 12px",marginBottom:14}}>
+              <div style={{fontSize:10,color:T.primaryL,fontWeight:700,marginBottom:4}}>💡 SUGESTÃO VISUAL</div>
+              <div style={{fontSize:12,color:C.text}}>{conteudoFinal.sugestao_visual}</div>
+            </div>}
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={addOS} style={{background:"none",border:`1px solid ${C.border2}`,color:C.text,padding:"8px 16px",borderRadius:8,cursor:"pointer",fontSize:13}}>Salvar na lista</button>
+              <button onClick={aprovarEAgendar} style={{background:"linear-gradient(135deg,#10b981,#059669)",color:"#fff",border:"none",padding:"9px 22px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:"0 4px 18px #10b98130"}}><Check size={14}/> Aprovar e Enviar para Calendário</button>
+            </div>
+          </div>}
         </div>}
-        {ordens.length===0&&!novaOS&&<div style={{background:C.surf,border:`1px dashed ${C.border2}`,borderRadius:14,padding:"40px",textAlign:"center",color:C.muted}}>Nenhuma solicitação criada</div>}
+
+        {/* LISTA DE ORDENS */}
+        {ordens.length===0&&!novaOS&&<div style={{background:C.surf,border:`1px dashed ${C.border2}`,borderRadius:14,padding:"40px",textAlign:"center",color:C.muted}}>
+          <FileText size={32} color={C.muted} style={{margin:"0 auto 12px"}} />
+          <div style={{fontSize:14,fontWeight:600,marginBottom:4}}>Nenhuma solicitação ainda</div>
+          <div style={{fontSize:12}}>Crie uma solicitação e a IA gerará o conteúdo completo</div>
+        </div>}
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           {[...ordens].reverse().map(o=>{
             const pub=pubs.find(p=>p.id==o.publicoId);
@@ -1662,7 +1899,7 @@ RETORNE APENAS JSON válido, sem texto antes ou depois:
                   <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:6}}>
                     {o.urgente&&<Badge color="#E8890C">🚨 URGENTE</Badge>}
                     <Badge color={T.primaryL}>{o.tipo}</Badge>
-                    <Badge color={o.status==="Pendente"?"#FFD580":"#A8E6A3"}>{o.status}</Badge>
+                    <Badge color={o.status==="Pendente"?"#FFD580":o.status==="Em produção"?"#93C5FD":"#A8E6A3"}>{o.status}</Badge>
                     {pub&&<span style={{fontSize:10,color:C.muted}}>👥 {pub.nome}</span>}
                   </div>
                   <div style={{fontWeight:700,fontSize:13,marginBottom:3}}>{o.titulo}</div>
