@@ -1526,6 +1526,8 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
     const [gerandoFinal,setGerandoFinal]=useState(false);
     const [conteudoEdit,setConteudoEdit]=useState({titulo:"",legenda:"",hook:"",hashtags:"",cta:""});
     const imgRef=useRef(null);
+    const [expandedCards,setExpandedCards]=useState({});
+    const toggleExpand=(id)=>setExpandedCards(p=>({...p,[id]:!p[id]}));
 
     const SC={"Rascunho":C.muted,"Ag. aprovação":"#A0C4FF","Alteração":"#E8890C","Aprovado":"#FFD580","Agendado":"#DDD6FE","Publicado":"#10B981"};
     const PLATS=["Instagram","Facebook","TikTok","LinkedIn","WhatsApp","Canal WA","YouTube","Stories","Reels","Todas"];
@@ -1595,7 +1597,7 @@ Retorne APENAS JSON:
     async function gerarConteudoFinal(){
       if(!roteiro) return;
       setGerandoFinal(true); setConteudoFinal(null);
-      const imgDesc=imagens.length>0?`\n\nO usuário enviou ${imagens.length} imagem(ns). Instrução: ${imgInstrucao==="usar"?"use a imagem como referência visual no post":imgInstrucao==="descrever"?"crie a legenda descrevendo o que está na imagem":imgInstrucao==="editar"?"o usuário quer que a imagem seja editada/adaptada — inclua orientações no post"}.`:"";
+      const imgDesc=imagens.length>0?`\n\nO usuário enviou ${imagens.length} imagem(ns). Instrução: ${imgInstrucao==="usar"?"use a imagem como referência visual no post":imgInstrucao==="descrever"?"crie a legenda descrevendo o que está na imagem":"o usuário quer que a imagem seja editada/adaptada"}.`:"";
       const prompt=`Você é um copywriter especialista em redes sociais. Crie o conteúdo COMPLETO e PRONTO para publicar.
 
 EMPRESA: ${co.name} | NICHO: ${co.niche}
@@ -2014,14 +2016,24 @@ RETORNE APENAS JSON válido, sem texto antes ou depois:
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           {[...agenda].filter(a=>["Rascunho","Ag. aprovação","Alteração"].includes(a.status)).sort((a,b)=>a.data>b.data?1:-1).map(a=>{
             const sc=SC[a.status]||C.muted;
+            const expanded=!!expandedCards[a.id];
             return <div key={a.id} style={{background:C.surf,border:`1px solid ${a.status==="Alteração"?"#E8890C30":C.border}`,borderRadius:12,padding:"14px 16px",display:"flex",gap:10}}>
               <div style={{width:3,background:sc,borderRadius:2,flexShrink:0}} />
               <div style={{flex:1,minWidth:0}}>
                 <div style={{display:"flex",gap:6,marginBottom:5,flexWrap:"wrap"}}><Badge color={T.primaryL}>{a.tipo}</Badge><Badge color={C.blue}>{a.plataforma}</Badge><Badge color={sc}>{a.status}</Badge></div>
                 <div style={{fontWeight:700,fontSize:13,marginBottom:2}}>{a.titulo}</div>
-                {a.legenda&&<div style={{fontSize:12,color:C.muted,lineHeight:1.4}}>{a.legenda.slice(0,120)}{a.legenda.length>120?"…":""}</div>}
+                {a.legenda&&<>
+                  <div style={{fontSize:12,color:C.muted,lineHeight:1.6,whiteSpace:"pre-wrap",marginBottom:2}}>
+                    {expanded?a.legenda:a.legenda.slice(0,120)+(a.legenda.length>120?"…":"")}
+                  </div>
+                  {a.legenda.length>120&&<div style={{display:"flex",gap:8,alignItems:"center",marginTop:2}}>
+                    <button onClick={()=>toggleExpand(a.id)} style={{background:"none",border:"none",color:T.primaryL,cursor:"pointer",fontSize:11,padding:0,fontWeight:600}}>{expanded?"▲ Recolher":"▼ Ver legenda completa"}</button>
+                    {expanded&&<button onClick={()=>navigator.clipboard?.writeText(a.legenda)} style={{background:"none",border:`1px solid ${C.border2}`,color:C.muted,cursor:"pointer",fontSize:10,padding:"2px 8px",borderRadius:5}}>📋 Copiar</button>}
+                  </div>}
+                </>}
+                {a.hashtags&&expanded&&<div style={{fontSize:11,color:T.primaryL,marginTop:4,lineHeight:1.7,opacity:.7}}>{a.hashtags}</div>}
                 {a.alteracaoMsg&&<div style={{fontSize:11,background:"#E8890C15",border:"1px solid #E8890C30",borderRadius:6,padding:"5px 9px",color:"#E8890C",marginTop:6}}>✏️ {a.alteracaoMsg}</div>}
-                <div style={{fontSize:11,color:C.muted,marginTop:4}}>📅 {a.data} {a.hora}</div>
+                <div style={{fontSize:11,color:C.muted,marginTop:4}}>📅 {a.data} {a.hora&&`às ${a.hora}`}</div>
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:5,flexShrink:0}}>
                 <button onClick={()=>sendApproval(a)} style={{fontSize:11,background:"#25D36618",border:"1px solid #25D36640",color:"#25D366",padding:"4px 10px",borderRadius:7,cursor:"pointer",fontWeight:700}}>📱 WA</button>
@@ -2273,6 +2285,50 @@ RETORNE APENAS JSON válido, sem texto antes ou depois:
     const [tipo, setTipo] = useState("whatsapp"); // whatsapp | email | linkedin
     const [nova, setNova] = useState({nome:"",assunto:"",mensagem:"",publico:"todos",agendada:false,dataEnvio:"",horario:"",status:"rascunho"});
     const [sending, setSending] = useState(false);
+    const [gerandoMsg, setGerandoMsg] = useState(false);
+
+    async function gerarMensagemIA(){
+      if(!nova.nome) return;
+      setGerandoMsg(true);
+      const prompts={
+        whatsapp:`Você é um copywriter especialista em WhatsApp Marketing. Crie uma mensagem de campanha via WhatsApp que seja envolvente, use emojis estrategicamente, tenha um gancho forte e um CTA claro.
+
+EMPRESA: ${co.name}
+NICHO: ${co.niche}
+CAMPANHA: ${nova.nome}
+PÚBLICO: ${(form.publicos||[]).find(p=>p.id==nova.publico)?.nome||"Geral"}
+
+Retorne APENAS o texto da mensagem WhatsApp pronto para enviar (sem JSON, sem markdown). Use *negrito* para ênfase, _itálico_ para destaques. Máximo 500 caracteres para não ser cortado. Inclua CTA com link, telefone ou convite para responder.`,
+
+        email:`Você é um copywriter de e-mail marketing. Crie um e-mail persuasivo, com storytelling, urgência e CTA forte.
+
+EMPRESA: ${co.name}
+NICHO: ${co.niche}
+CAMPANHA: ${nova.nome}
+ASSUNTO: ${nova.assunto||"(não informado)"}
+PÚBLICO: ${(form.publicos||[]).find(p=>p.id==nova.publico)?.nome||"Geral"}
+
+Retorne APENAS o corpo do e-mail em texto simples, pronto para enviar. Use linhas em branco para separação. Inclua saudação personalizada, proposta de valor, prova social rápida e CTA.`,
+
+        linkedin:`Você é especialista em LinkedIn Marketing. Crie um post profissional com autoridade, storytelling e valor para a rede.
+
+EMPRESA: ${co.name}
+NICHO: ${co.niche}
+CAMPANHA: ${nova.nome}
+PÚBLICO: ${(form.publicos||[]).find(p=>p.id==nova.publico)?.nome||"Profissionais"}
+
+Retorne APENAS o texto do post LinkedIn pronto para publicar. Máximo 1.300 caracteres. Comece com uma frase de impacto, desenvolva com contexto/valor, termine com CTA e 3-5 hashtags relevantes.`
+      };
+      try{
+        const r=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:prompts[tipo]}]})});
+        const d=await r.json();
+        if(d.error) throw new Error(JSON.stringify(d.error));
+        const txt=d.content?.find(b=>b.type==="text")?.text||"";
+        setNova(p=>({...p,mensagem:txt.trim()}));
+        flash("✨ Mensagem gerada!","teal");
+      }catch(e){flash(`❌ ${e.message}`,"coral");}
+      setGerandoMsg(false);
+    }
 
     function saveCampanha(status="rascunho"){
       const c = {...nova, id:Date.now(), tipo, status, criada:new Date().toISOString(), enviadas:0, abertas:0, cliques:0};
@@ -2410,9 +2466,14 @@ RETORNE APENAS JSON válido, sem texto antes ou depois:
         </div>
 
         <div style={{marginBottom:12}}>
-          <label style={{fontSize:11,fontWeight:700,color:C.muted,display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:.5}}>
-            {tipo==="whatsapp"?"Mensagem *":tipo==="linkedin"?"Texto do Post *":"Corpo do E-mail *"}
-          </label>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
+            <label style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:"uppercase",letterSpacing:.5}}>
+              {tipo==="whatsapp"?"Mensagem *":tipo==="linkedin"?"Texto do Post *":"Corpo do E-mail *"}
+            </label>
+            <button onClick={gerarMensagemIA} disabled={!nova.nome||gerandoMsg} style={{background:(!nova.nome||gerandoMsg)?C.surf3:G.primary,color:(!nova.nome||gerandoMsg)?C.muted:"#fff",border:"none",padding:"4px 12px",borderRadius:7,cursor:(!nova.nome||gerandoMsg)?"default":"pointer",fontWeight:700,fontSize:11,display:"flex",alignItems:"center",gap:5}}>
+              {gerandoMsg?<><RefreshCw size={11} style={{animation:"spin 1s linear infinite"}}/> Gerando…</>:<><Sparkles size={11}/> Gerar com IA</>}
+            </button>
+          </div>
           <textarea value={nova.mensagem} onChange={e=>setNova(p=>({...p,mensagem:e.target.value}))} rows={7}
             placeholder={tipo==="whatsapp"
               ?"Escreva a mensagem WhatsApp. Use *negrito*, _itálico_.\n\nEx:\n🎉 Olá! Temos uma novidade especial para você...\n\n👉 Acesse: seusite.com.br"
