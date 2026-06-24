@@ -1508,10 +1508,6 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
     function updS(id,s,extra={}){ upd("agenda",agenda.map(a=>a.id===id?{...a,status:s,...extra}:a)); }
     async function sendApproval(it){
       updS(it.id,"Ag. aprovação"); setWaP(it);
-      const { zapiInstanceId, zapiToken, zapiClientToken, zapiPhone, waNome, responsavel } = form;
-      if(!zapiInstanceId || !zapiToken || !zapiClientToken || !zapiPhone){
-        flash("⚠️ Configure o Zapi nas Integrações para envio real","coral"); return;
-      }
       const msg =
 `🎯 *Aprovação de Conteúdo — ${co.name}*
 
@@ -1528,13 +1524,15 @@ Responda:
 ✏️ *ALTERAR: [seu comentário]* — para solicitar mudança`;
 
       try {
-        await fetch('/api/whatsapp', {
+        const r = await fetch('/api/whatsapp', {
           method:'POST',
           headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ instanceId:zapiInstanceId, token:zapiToken, clientToken:zapiClientToken, phone:zapiPhone, message:msg }),
+          body: JSON.stringify({ message: msg }),
         });
-        flash("✅ Enviado para WhatsApp via Zapi!","teal");
-      } catch { flash("⚠️ Erro ao enviar — verifique as credenciais do Zapi","coral"); }
+        const data = await r.json();
+        if(data.success) flash("✅ Enviado para WhatsApp!","teal");
+        else flash(`⚠️ Erro Zapi: ${data.error}`,"coral");
+      } catch { flash("⚠️ Erro ao conectar com o servidor","coral"); }
     }
     function approve(it){ updS(it.id,"Aprovado"); setWaP(null); flash("✅ Aprovado — será agendado!","teal"); }
     function reqChange(it){ if(!altMsg.trim()) return; updS(it.id,"Alteração",{alteracaoMsg:altMsg}); setAltMsg(""); setWaP(null); flash("✏️ Alteração registrada","gold"); }
