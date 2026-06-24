@@ -126,6 +126,7 @@ const TABS = [
   {id:"os",         Icon:CalendarClock, label:"Programados"},
   {id:"redes",      Icon:Smartphone,    label:"Redes"},
   {id:"integracoes",Icon:Plug,          label:"Integrações"},
+  {id:"mensagens",  Icon:MessageSquare, label:"Mensagens"},
   {id:"cofre",      Icon:Lock,          label:"Cofre"},
 ];
 
@@ -405,6 +406,7 @@ export default function App() {
           {tab==="calendario"  &&<TabCalendario />}
           {tab==="redes"       &&<TabRedes />}
           {tab==="integracoes" &&<TabIntegracoes />}
+          {tab==="mensagens"   &&<TabMensagens />}
           {tab==="cofre"       &&<TabCofre />}
         </div>
       </div>
@@ -568,6 +570,19 @@ export default function App() {
     const logRef = useRef(null);
 
     const addLog = (msg, type="info") => setLog(p => [...p, {msg, type, t: Date.now()}]);
+
+    function parseHandle(val, base) {
+      if (!val) return null;
+      const clean = val.trim()
+        .replace(/^https?:\/\/(www\.)?(instagram|facebook|tiktok|youtube)\.com\//i,'')
+        .replace(/\//g,'').replace(/^@/,'').split('?')[0];
+      return clean || null;
+    }
+
+    const igHandle = parseHandle(urls.instagram, "instagram");
+    const fbHandle = parseHandle(urls.facebook, "facebook");
+    const ttHandle = parseHandle(urls.tiktok, "tiktok");
+    const ytHandle = parseHandle(urls.youtube, "youtube");
 
     async function runScan() {
       const hasInput = Object.values(urls).some(v=>v.trim()) || manual.trim();
@@ -877,6 +892,22 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
             placeholder={`Cole aqui o máximo de informação real da marca — a IA não acessa a internet:\n\n• Bio completa do Instagram\n• Texto do site (sobre, serviços, produtos)\n• Lista de produtos/serviços com preços\n• Descrição do público que já atende\n• Últimas legendas de posts\n• Qualquer texto que represente a marca`}
             style={{...inp,resize:"vertical",lineHeight:1.7,fontFamily:"inherit",fontSize:13}} />
         </div>
+        {/* Preview de confirmação dos perfis */}
+        {(igHandle||fbHandle||ttHandle||ytHandle||urls.whatsapp||urls.site)&&(
+          <div style={{marginTop:14,background:C.surf3,border:`1px solid ${T.primary}25`,borderRadius:10,padding:"12px 14px"}}>
+            <div style={{fontSize:10,fontWeight:800,color:T.primaryL,letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>Confirme os perfis antes de analisar</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+              {igHandle&&<a href={`https://instagram.com/${igHandle}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:6,background:"#E1306C18",border:"1px solid #E1306C40",borderRadius:8,padding:"6px 12px",textDecoration:"none",color:"#E1306C",fontSize:13,fontWeight:600}}>🟣 @{igHandle} <span style={{fontSize:10,opacity:.7}}>↗ verificar</span></a>}
+              {fbHandle&&<a href={`https://facebook.com/${fbHandle}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:6,background:"#1877F218",border:"1px solid #1877F240",borderRadius:8,padding:"6px 12px",textDecoration:"none",color:"#1877F2",fontSize:13,fontWeight:600}}>🔵 {fbHandle} <span style={{fontSize:10,opacity:.7}}>↗ verificar</span></a>}
+              {ttHandle&&<a href={`https://tiktok.com/@${ttHandle}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:6,background:"#00F2EA18",border:"1px solid #00F2EA40",borderRadius:8,padding:"6px 12px",textDecoration:"none",color:"#00F2EA",fontSize:13,fontWeight:600}}>⚫ @{ttHandle} <span style={{fontSize:10,opacity:.7}}>↗ verificar</span></a>}
+              {ytHandle&&<a href={`https://youtube.com/@${ytHandle}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:6,background:"#FF000018",border:"1px solid #FF000040",borderRadius:8,padding:"6px 12px",textDecoration:"none",color:"#FF4444",fontSize:13,fontWeight:600}}>🔴 @{ytHandle} <span style={{fontSize:10,opacity:.7}}>↗ verificar</span></a>}
+              {urls.site&&<a href={urls.site.startsWith("http")?urls.site:`https://${urls.site}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:6,background:`${T.primary}18`,border:`1px solid ${T.primary}40`,borderRadius:8,padding:"6px 12px",textDecoration:"none",color:T.primaryL,fontSize:13,fontWeight:600}}>🌐 {urls.site.replace(/^https?:\/\//,"")} <span style={{fontSize:10,opacity:.7}}>↗ verificar</span></a>}
+              {urls.whatsapp&&<span style={{display:"flex",alignItems:"center",gap:6,background:"#25D36618",border:"1px solid #25D36640",borderRadius:8,padding:"6px 12px",color:"#25D366",fontSize:13,fontWeight:600}}>🟢 {urls.whatsapp}</span>}
+            </div>
+            <div style={{fontSize:11,color:C.muted,marginTop:8}}>Clique nos links para confirmar que são os perfis corretos antes de gastar tokens na análise.</div>
+          </div>
+        )}
+
         <div style={{marginTop:14,display:"flex",gap:10,alignItems:"center"}}>
           <button onClick={runScan} disabled={phase==="scanning"} style={{background:phase==="scanning"?C.surf3:G.primary,color:phase==="scanning"?C.muted:"#fff",border:"none",padding:"11px 28px",borderRadius:10,cursor:phase==="scanning"?"default":"pointer",fontWeight:700,fontSize:14,boxShadow:phase==="scanning"?"none":`0 4px 24px ${T.primary}45`,display:"flex",alignItems:"center",gap:8}}>
             {phase==="scanning" ? <>⏳ Analisando…</> : <>🚀 Analisar com IA</>}
@@ -1621,6 +1652,163 @@ Responda:
       <Sec title="WhatsApp Business API (Meta)" accent="#25D366"><G2 ch={[<F label="WABA ID"><I k="waBaId" ph="000000000000" /></F>,<F label="Phone Number ID"><I k="waPhoneId" ph="000000000000" /></F>]} /><F label="Access Token"><TA k="waApiToken" ph="EAAxxxx…" rows={2} /></F></Sec>
       <Sec title="ManyChat" accent={C.purple}><G2 ch={[<F label="API Key"><I k="mcApiKey" type="password" ph="••••••" /></F>,<F label="Bot ID"><I k="mcBotId" ph="0000000" /></F>]} /><F label="Fluxos ativos"><TA k="mcFlows" ph="Boas-vindas, nutrição, respostas…" rows={2} /></F></Sec>
       <Sec title="Canva + N8n + Super Agentes" accent={C.gold}><G2 ch={[<F label="Brand Kit ID"><I k="canvaKitId" ph="DAFxxxx" /></F>,<F label="Pasta templates"><I k="canvaFolder" ph="https://canva.com/folder/…" /></F>]} /><G2 ch={[<F label="N8n Webhook"><I k="n8nWebhook" ph="https://…/webhook/…" /></F>,<F label="Super Agentes ID"><I k="superAgentesId" ph="agent-xxxx" /></F>]} /><F label="Google Drive"><I k="driveFolder" ph="https://drive.google.com/…" /></F></Sec>
+    </>;
+  }
+
+  // ─── CENTRAL DE MENSAGENS ─────────────────────────────────────────────────
+  function TabMensagens(){
+    const [canal, setCanal] = useState("whatsapp");
+    const [regras, setRegras] = useState(form.msgRegras || []);
+    const [novaChave, setNovaChave] = useState("");
+    const [novaResp, setNovaResp] = useState("");
+
+    const temZapi = !!(form.zapiInstanceId || form.zapiPhone);
+    const temMeta = !!(form.metaPageToken);
+
+    function addRegra(){
+      if(!novaChave.trim()||!novaResp.trim()) return;
+      const nova = [...regras, {id:Date.now(), chave:novaChave.trim(), resposta:novaResp.trim(), ativo:true}];
+      setRegras(nova);
+      setForm(p=>({...p, msgRegras:nova}));
+      setNovaChave(""); setNovaResp("");
+      save();
+    }
+    function toggleRegra(id){
+      const upd = regras.map(r=>r.id===id?{...r,ativo:!r.ativo}:r);
+      setRegras(upd); setForm(p=>({...p,msgRegras:upd})); save();
+    }
+    function delRegra(id){
+      const upd = regras.filter(r=>r.id!==id);
+      setRegras(upd); setForm(p=>({...p,msgRegras:upd})); save();
+    }
+
+    const CANAIS = [
+      {id:"whatsapp", label:"WhatsApp", cor:"#25D366", icon:"🟢", ativo:temZapi, info:"via Zapi"},
+      {id:"instagram", label:"Instagram DM", cor:"#E1306C", icon:"🟣", ativo:temMeta, info:"via Graph API"},
+      {id:"facebook", label:"Facebook", cor:"#1877F2", icon:"🔵", ativo:temMeta, info:"via Graph API"},
+    ];
+
+    const DEMO_MSGS = [
+      {id:1, canal:"whatsapp", de:"João Silva", msg:"Olá, quero saber mais sobre os serviços", tempo:"há 5min", lida:false, avatar:"JS"},
+      {id:2, canal:"instagram", de:"@maria_cliente", msg:"Oi! Vi o post de vocês e me interessei", tempo:"há 12min", lida:false, avatar:"MC"},
+      {id:3, canal:"whatsapp", de:"Pedro Santos", msg:"Qual o prazo de entrega?", tempo:"há 1h", lida:true, avatar:"PS"},
+      {id:4, canal:"facebook", de:"Ana Lima", msg:"Vocês atendem na minha cidade?", tempo:"há 2h", lida:true, avatar:"AL"},
+    ];
+
+    const msgsFiltradas = DEMO_MSGS.filter(m => canal==="whatsapp" ? m.canal==="whatsapp" : canal==="instagram" ? m.canal==="instagram" : m.canal==="facebook");
+
+    return <>
+      {/* Header */}
+      <div style={{marginBottom:16,padding:"20px 22px",background:G.glow,border:`1px solid ${T.primary}20`,borderRadius:16,position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",top:-30,right:-30,width:120,height:120,background:`radial-gradient(circle,${T.primary}18,transparent 70%)`}} />
+        <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:6}}>
+          <div style={{width:48,height:48,borderRadius:12,background:G.primary,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 0 24px ${T.primary}40`,flexShrink:0}}><MessageSquare size={22} color="#fff" strokeWidth={2}/></div>
+          <div>
+            <div style={{fontSize:18,fontWeight:700,background:G.hero,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>Central de Mensagens</div>
+            <div style={{fontSize:12,color:C.muted,marginTop:2}}>Centralize mensagens de todas as redes sociais. Configure respostas automáticas e acompanhe em tempo real.</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Status dos canais */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
+        {CANAIS.map(c=>(
+          <div key={c.id} style={{background:C.surf,border:`1px solid ${c.ativo?c.cor+"40":C.border}`,borderRadius:12,padding:"14px 16px",cursor:"pointer",opacity:c.ativo?1:.6}} onClick={()=>setCanal(c.id)}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+              <span style={{fontSize:20}}>{c.icon}</span>
+              <span style={{fontSize:10,background:c.ativo?"#A8E6A318":"#FF707018",color:c.ativo?"#A8E6A3":"#FF7070",padding:"2px 8px",borderRadius:20,fontWeight:700}}>{c.ativo?"Conectado":"Desconectado"}</span>
+            </div>
+            <div style={{fontSize:13,fontWeight:700,color:canal===c.id?c.cor:C.text}}>{c.label}</div>
+            <div style={{fontSize:11,color:C.muted,marginTop:2}}>{c.ativo?c.info:"Configure nas Integrações"}</div>
+            {canal===c.id&&<div style={{marginTop:8,height:2,borderRadius:2,background:c.cor}} />}
+          </div>
+        ))}
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+        {/* Inbox */}
+        <div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
+          <div style={{fontSize:10,fontWeight:800,color:T.primaryL,letterSpacing:2,textTransform:"uppercase",marginBottom:14,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <span>Mensagens Recentes</span>
+            <span style={{fontSize:10,background:`${T.primary}20`,color:T.primaryL,padding:"2px 8px",borderRadius:20}}>{msgsFiltradas.filter(m=>!m.lida).length} novas</span>
+          </div>
+          {msgsFiltradas.length===0
+            ? <div style={{textAlign:"center",padding:"30px 0",color:C.muted,fontSize:13}}>Nenhuma mensagem neste canal ainda</div>
+            : msgsFiltradas.map(m=>(
+              <div key={m.id} style={{display:"flex",gap:10,padding:"10px 0",borderBottom:`1px solid ${C.border2}`,alignItems:"flex-start"}}>
+                <div style={{width:36,height:36,borderRadius:"50%",background:m.lida?C.surf3:G.primary,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#fff",flexShrink:0}}>{m.avatar}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}>
+                    <span style={{fontSize:13,fontWeight:m.lida?500:700,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.de}</span>
+                    <span style={{fontSize:10,color:C.muted,flexShrink:0}}>{m.tempo}</span>
+                  </div>
+                  <div style={{fontSize:12,color:C.muted,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.msg}</div>
+                </div>
+                {!m.lida&&<div style={{width:8,height:8,borderRadius:"50%",background:T.primaryL,flexShrink:0,marginTop:6}} />}
+              </div>
+            ))
+          }
+          <div style={{marginTop:12,padding:"10px 14px",background:`${T.primary}10`,border:`1px solid ${T.primary}20`,borderRadius:10,fontSize:12,color:C.muted,textAlign:"center"}}>
+            {CANAIS.find(c=>c.id===canal)?.ativo
+              ? "🔄 Mensagens em tempo real quando integração estiver ativa"
+              : <>Configure a integração <strong style={{color:C.text}}>{CANAIS.find(c=>c.id===canal)?.label}</strong> na aba Integrações</>}
+          </div>
+        </div>
+
+        {/* Auto-respostas */}
+        <div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
+          <div style={{fontSize:10,fontWeight:800,color:T.primaryL,letterSpacing:2,textTransform:"uppercase",marginBottom:14}}>Respostas Automáticas</div>
+
+          {/* Nova regra */}
+          <div style={{background:C.surf3,borderRadius:10,padding:"12px 14px",marginBottom:14}}>
+            <div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:600}}>Nova regra — palavra-chave → resposta</div>
+            <input value={novaChave} onChange={e=>setNovaChave(e.target.value)}
+              placeholder="Palavra-chave (ex: preço, horário, endereço)"
+              style={{...inp,marginBottom:8,fontFamily:"inherit",fontSize:13}} />
+            <textarea value={novaResp} onChange={e=>setNovaResp(e.target.value)} rows={3}
+              placeholder="Resposta automática quando detectar esta palavra..."
+              style={{...inp,resize:"none",fontFamily:"inherit",fontSize:13,lineHeight:1.5,marginBottom:8}} />
+            <button onClick={addRegra} disabled={!novaChave||!novaResp}
+              style={{background:(!novaChave||!novaResp)?C.surf2:G.primary,color:(!novaChave||!novaResp)?C.muted:"#fff",border:"none",padding:"8px 18px",borderRadius:8,cursor:(!novaChave||!novaResp)?"default":"pointer",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",gap:6}}>
+              <Plus size={14}/> Adicionar Regra
+            </button>
+          </div>
+
+          {/* Lista de regras */}
+          {regras.length===0
+            ? <div style={{textAlign:"center",padding:"20px 0",color:C.muted,fontSize:13}}>Nenhuma regra configurada ainda</div>
+            : regras.map(r=>(
+              <div key={r.id} style={{background:r.ativo?`${T.primary}08`:C.surf3,border:`1px solid ${r.ativo?T.primary+"25":C.border2}`,borderRadius:9,padding:"10px 12px",marginBottom:8}}>
+                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8,marginBottom:4}}>
+                  <span style={{fontSize:12,fontWeight:700,color:r.ativo?T.primaryL:C.muted,background:r.ativo?`${T.primary}15`:C.surf2,padding:"2px 10px",borderRadius:20}}>{r.chave}</span>
+                  <div style={{display:"flex",gap:6,flexShrink:0}}>
+                    <button onClick={()=>toggleRegra(r.id)} style={{background:r.ativo?"#A8E6A315":"#FF707015",border:`1px solid ${r.ativo?"#A8E6A330":"#FF707030"}`,color:r.ativo?"#A8E6A3":"#FF7070",padding:"2px 8px",borderRadius:6,cursor:"pointer",fontSize:10,fontWeight:700}}>{r.ativo?"ON":"OFF"}</button>
+                    <button onClick={()=>delRegra(r.id)} style={{background:"#FF444415",border:"1px solid #FF444430",color:"#FF7070",padding:"2px 8px",borderRadius:6,cursor:"pointer",fontSize:10}}><Trash2 size={10}/></button>
+                  </div>
+                </div>
+                <div style={{fontSize:12,color:C.muted,lineHeight:1.4}}>{r.resposta.slice(0,100)}{r.resposta.length>100?"…":""}</div>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+
+      {/* Info sobre integração real */}
+      <div style={{marginTop:14,background:`${T.primary}08`,border:`1px solid ${T.primary}20`,borderRadius:12,padding:"14px 18px"}}>
+        <div style={{fontSize:12,fontWeight:700,color:T.primaryL,marginBottom:6}}>Como funciona a Central de Mensagens</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+          {[
+            ["🟢 WhatsApp","Configure o Zapi na aba Integrações. As mensagens recebidas ficam centralizadas aqui e as respostas automáticas são disparadas via Zapi."],
+            ["🟣 Instagram DM","Requer Page Access Token com permissão instagram_manage_messages configurada na aba Integrações."],
+            ["🔵 Facebook","Requer Page Access Token com permissão pages_messaging configurada na aba Integrações."],
+          ].map(([t,d])=>(
+            <div key={t} style={{background:C.surf,borderRadius:9,padding:"10px 12px"}}>
+              <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:4}}>{t}</div>
+              <div style={{fontSize:11,color:C.muted,lineHeight:1.5}}>{d}</div>
+            </div>
+          ))}
+        </div>
+      </div>
     </>;
   }
 
