@@ -1647,26 +1647,17 @@ function LoginScreen({ onLogin }) {
       <div style={{width:"100%",maxWidth:420,position:"relative",zIndex:1}}>
         {/* Logo */}
         <div style={{textAlign:"center",marginBottom:36}}>
+          <img src="/logo-metamorfose.png" alt="Metamorfose" style={{
+            width:140,height:"auto",margin:"0 auto 10px",display:"block",
+            filter:mode==="light"?"none":"drop-shadow(0 0 24px rgba(21,101,192,0.6))",
+          }} onError={e=>{e.target.style.display="none";}}/>
           <div style={{
-            width:72,height:72,borderRadius:20,
-            background:`linear-gradient(135deg, ${T.accent}, ${T.primaryL})`,
-            display:"flex",alignItems:"center",justifyContent:"center",
-            margin:"0 auto 18px",boxShadow:`0 0 48px ${T.primary}50`,
-          }}>
-            <svg width="38" height="38" viewBox="0 0 38 38" fill="none">
-              <path d="M19 4C19 4 8 10 8 19C8 25 13 30 19 30C25 30 30 25 30 19C30 10 19 4 19 4Z" fill="white" fillOpacity="0.9"/>
-              <path d="M19 30C19 30 12 32 10 28C8 24 12 20 19 20C26 20 30 24 28 28C26 32 19 30 19 30Z" fill="white" fillOpacity="0.5"/>
-              <circle cx="15" cy="16" r="2.5" fill={T.primary}/>
-              <circle cx="23" cy="16" r="2.5" fill={T.primary}/>
-            </svg>
-          </div>
-          <div style={{
-            fontSize:32,fontWeight:800,letterSpacing:-1,
+            fontSize:28,fontWeight:800,letterSpacing:-0.5,
             fontFamily:"'Space Grotesk',sans-serif",
             background:`linear-gradient(135deg, ${T.primaryXL}, ${T.textSub})`,
             WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",
-          }}>SociaMind</div>
-          <div style={{fontSize:11,color:T.textMuted,marginTop:5,letterSpacing:3,textTransform:"uppercase",fontWeight:500}}>by Metamorfose</div>
+          }}>Social Mid IA</div>
+          <div style={{fontSize:11,color:T.textMuted,marginTop:4,letterSpacing:3,textTransform:"uppercase",fontWeight:500}}>Gestão de Redes Sociais</div>
         </div>
 
         {/* Card */}
@@ -1712,7 +1703,7 @@ function LoginScreen({ onLogin }) {
         </div>
 
         <div style={{textAlign:"center",marginTop:20,fontSize:11,color:T.textMuted,opacity:.5}}>
-          SociaMind v2.0 · Metamorfose · 2026 · {mode==="dark"?"Modo Noturno":"Modo Diurno"}
+          Social Mid IA v2.0 · Metamorfose · 2026 · {mode==="dark"?"Modo Noturno":"Modo Diurno"}
         </div>
       </div>
     </div>
