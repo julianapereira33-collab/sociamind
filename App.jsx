@@ -583,29 +583,30 @@ export default function App() {
       setTimeout(()=>addLog("🎯 Construindo estratégia de conteúdo personalizada...", "info"), 3800);
       setTimeout(()=>addLog("✍️ Gerando estratégia completa de marketing digital...", "info"), 4800);
 
-      const prompt = `Você é um estrategista digital sênior especialista em marketing digital, branding e social media. 
-Analise os dados desta marca e retorne uma análise estratégica COMPLETA em JSON.
+      const temInfoManual = !!(manual.trim() || form.descricao || form.servicos);
+      const prompt = `Você é um estrategista digital sênior especialista em marketing digital, branding e redes sociais.
+
+ATENÇÃO IMPORTANTE: Você NÃO tem acesso à internet e NÃO consegue visitar perfis ou URLs. Analise APENAS com base nas informações fornecidas abaixo. Seja específico e realista — não invente dados que não foram fornecidos. Se não tiver informação suficiente sobre algo, diga o que seria ideal para o nicho informado.
 
 EMPRESA: ${form.nomeFantasia || co.name}
-NICHO: ${co.niche}
+NICHO/SEGMENTO: ${co.niche}
 
-PERFIS E LINKS INFORMADOS:
-${urls.instagram ? `Instagram: ${urls.instagram}` : ""}
-${urls.facebook ? `Facebook: ${urls.facebook}` : ""}
-${urls.tiktok ? `TikTok: ${urls.tiktok}` : ""}
-${urls.site ? `Site: ${urls.site}` : ""}
-${urls.youtube ? `YouTube: ${urls.youtube}` : ""}
-${urls.whatsapp ? `WhatsApp: ${urls.whatsapp}` : ""}
-${urls.extra ? `Outros: ${urls.extra}` : ""}
+PERFIS INFORMADOS (referência de posicionamento digital):
+${urls.instagram ? `• Instagram: ${urls.instagram}` : ""}
+${urls.facebook ? `• Facebook: ${urls.facebook}` : ""}
+${urls.tiktok ? `• TikTok: ${urls.tiktok}` : ""}
+${urls.site ? `• Site: ${urls.site}` : ""}
+${urls.youtube ? `• YouTube: ${urls.youtube}` : ""}
+${urls.whatsapp ? `• WhatsApp: ${urls.whatsapp}` : ""}
+${urls.extra ? `• Outros: ${urls.extra}` : ""}
 
-${manual ? `INFORMAÇÕES ADICIONAIS FORNECIDAS PELO USUÁRIO:\n${manual}` : ""}
+${manual ? `CONTEÚDO FORNECIDO PELO USUÁRIO (bio, textos, descrições — BASE PRINCIPAL DA ANÁLISE):\n${manual}` : "⚠️ Nenhum texto adicional fornecido. Baseie-se no nicho e nos handles para inferir o posicionamento."}
 
-DADOS JÁ PREENCHIDOS NO SISTEMA:
-${form.descricao ? `Descrição atual: ${form.descricao}` : ""}
+DADOS DO SISTEMA:
+${form.descricao ? `Descrição cadastrada: ${form.descricao}` : ""}
 ${form.servicos ? `Serviços: ${form.servicos}` : ""}
-${form.responsavel ? `Responsável: ${form.responsavel}` : ""}
 
-Com base em todo esse contexto e no nicho "${co.niche}", crie uma análise estratégica profunda como se você fosse um estrategista digital que acabou de fazer um diagnóstico completo desta marca.
+Faça uma análise estratégica profunda e ESPECÍFICA para esta marca, considerando o nicho "${co.niche}". Se o usuário colou textos da bio ou site, use-os como base principal. Seja concreto e acionável.
 
 RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
 {
@@ -871,10 +872,10 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
           ))}
         </div>
         <div>
-          <label style={{display:"block",fontSize:11,fontWeight:700,color:C.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:.5}}>💬 Informações adicionais (cole bio, descrição, produtos, sobre nós…)</label>
-          <textarea value={manual} onChange={e=>setManual(e.target.value)} rows={4}
-            placeholder={`Cole aqui qualquer informação útil sobre a marca:\n— Bio do Instagram\n— Texto do site\n— Lista de produtos e preços\n— Descrição dos serviços\n— Público-alvo que você conhece\n— Qualquer texto que ajude a IA a entender a marca`}
-            style={{...inp,resize:"vertical",lineHeight:1.6,fontFamily:"inherit"}} />
+          <label style={{display:"block",fontSize:11,fontWeight:700,color:"#F5A623",marginBottom:4,textTransform:"uppercase",letterSpacing:.5}}>⭐ Cole aqui o conteúdo real do perfil — Bio, posts, site, produtos (quanto mais info, melhor a análise)</label>
+          <textarea value={manual} onChange={e=>setManual(e.target.value)} rows={5}
+            placeholder={`Cole aqui o máximo de informação real da marca — a IA não acessa a internet:\n\n• Bio completa do Instagram\n• Texto do site (sobre, serviços, produtos)\n• Lista de produtos/serviços com preços\n• Descrição do público que já atende\n• Últimas legendas de posts\n• Qualquer texto que represente a marca`}
+            style={{...inp,resize:"vertical",lineHeight:1.7,fontFamily:"inherit",fontSize:13}} />
         </div>
         <div style={{marginTop:14,display:"flex",gap:10,alignItems:"center"}}>
           <button onClick={runScan} disabled={phase==="scanning"} style={{background:phase==="scanning"?C.surf3:G.primary,color:phase==="scanning"?C.muted:"#fff",border:"none",padding:"11px 28px",borderRadius:10,cursor:phase==="scanning"?"default":"pointer",fontWeight:700,fontSize:14,boxShadow:phase==="scanning"?"none":`0 4px 24px ${T.primary}45`,display:"flex",alignItems:"center",gap:8}}>
@@ -914,12 +915,12 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
           <div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
             <div style={{fontSize:9,fontWeight:800,color:"#F5A623",letterSpacing:3,marginBottom:10,textTransform:"uppercase"}}>Diagnóstico da Marca</div>
-            <p style={{fontSize:12,color:C.muted,margin:0,lineHeight:1.7}}>{result.resumoMarca}</p>
-            {result.diagnostico&&<p style={{fontSize:12,color:C.hint,margin:"8px 0 0",lineHeight:1.6}}>{result.diagnostico}</p>}
+            <p style={{fontSize:14,color:C.text,margin:0,lineHeight:1.7}}>{result.resumoMarca}</p>
+            {result.diagnostico&&<p style={{fontSize:13,color:C.muted,margin:"8px 0 0",lineHeight:1.6}}>{result.diagnostico}</p>}
           </div>
           <div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
             <div style={{fontSize:9,fontWeight:800,color:"#FFD580",letterSpacing:3,marginBottom:10,textTransform:"uppercase"}}>Estratégia Sugerida</div>
-            <p style={{fontSize:12,color:C.muted,margin:0,lineHeight:1.7}}>{result.estrategiaGeral}</p>
+            <p style={{fontSize:14,color:C.text,margin:0,lineHeight:1.7}}>{result.estrategiaGeral}</p>
           </div>
         </div>
 
@@ -968,9 +969,9 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
                     {p.profissao&&<span style={{fontSize:10,background:C.surf2,color:C.muted,padding:"2px 8px",borderRadius:20}}>{p.profissao}</span>}
                     {p.renda&&<span style={{fontSize:10,background:C.surf2,color:C.muted,padding:"2px 8px",borderRadius:20}}>Classe {p.renda.toUpperCase()}</span>}
                   </div>
-                  <p style={{fontSize:11,color:C.muted,margin:"0 0 8px",lineHeight:1.5}}>{p.descricao?.slice(0,120)}{p.descricao?.length>120?"…":""}</p>
-                  <div style={{fontSize:10,background:"#EF444415",color:"#FF9090",padding:"4px 9px",borderRadius:7,marginBottom:4}}><strong>Dor:</strong> {p.dores?.slice(0,80)}</div>
-                  <div style={{fontSize:10,background:"#F5A62315",color:"#F5A623",padding:"4px 9px",borderRadius:7}}><strong>Desejo:</strong> {p.desejos?.slice(0,80)}</div>
+                  <p style={{fontSize:13,color:C.muted,margin:"0 0 8px",lineHeight:1.5}}>{p.descricao?.slice(0,160)}{p.descricao?.length>160?"…":""}</p>
+                  <div style={{fontSize:12,background:"#EF444415",color:"#FF9090",padding:"5px 10px",borderRadius:7,marginBottom:4}}><strong>Dor:</strong> {p.dores?.slice(0,100)}</div>
+                  <div style={{fontSize:12,background:"#F5A62315",color:"#F5A623",padding:"5px 10px",borderRadius:7}}><strong>Desejo:</strong> {p.desejos?.slice(0,100)}</div>
                 </div>
               ))}
             </div>
@@ -987,8 +988,8 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
                   <div style={{fontSize:22,marginBottom:6}}>{p.emoji||"📦"}</div>
                   <div style={{fontWeight:700,fontSize:13,marginBottom:2}}>{p.nome}</div>
                   {p.subtitulo&&<div style={{fontSize:10,color:"#F5A623",marginBottom:6}}>{p.subtitulo}</div>}
-                  <p style={{fontSize:11,color:C.muted,margin:"0 0 8px",lineHeight:1.4}}>{p.descricao?.slice(0,80)}</p>
-                  {p.preco&&<span style={{fontSize:10,background:"#F5A62315",color:"#F5A623",padding:"2px 8px",borderRadius:20}}>{p.preco}</span>}
+                  <p style={{fontSize:13,color:C.muted,margin:"0 0 8px",lineHeight:1.4}}>{p.descricao?.slice(0,100)}</p>
+                  {p.preco&&<span style={{fontSize:12,background:"#F5A62315",color:"#F5A623",padding:"3px 10px",borderRadius:20}}>{p.preco}</span>}
                 </div>
               ))}
             </div>
@@ -1003,7 +1004,7 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
               {result.estrategiaConteudo.pilaresEditoriais?.map((p,i)=>(
                 <div key={i} style={{background:C.surf3,borderRadius:9,padding:"10px 13px",display:"flex",gap:8,alignItems:"flex-start"}}>
                   <div style={{width:6,height:6,borderRadius:"50%",background:"#F5A623",flexShrink:0,marginTop:5}} />
-                  <div style={{fontSize:12,color:C.text,fontWeight:600}}>{p}</div>
+                  <div style={{fontSize:14,color:C.text,fontWeight:600}}>{p}</div>
                 </div>
               ))}
             </div>
@@ -1017,11 +1018,11 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
             </div>
             {result.estrategiaConteudo.tomVoz&&<div style={{background:C.surf3,borderRadius:9,padding:"10px 13px",marginBottom:8}}>
               <div style={{fontSize:9,color:C.muted,letterSpacing:1,marginBottom:3,textTransform:"uppercase"}}>Tom de Voz</div>
-              <div style={{fontSize:12,color:C.text,lineHeight:1.5}}>{result.estrategiaConteudo.tomVoz}</div>
+              <div style={{fontSize:14,color:C.text,lineHeight:1.5}}>{result.estrategiaConteudo.tomVoz}</div>
             </div>}
             {result.estrategiaConteudo.hooksIdeal&&<div style={{background:C.surf3,borderRadius:9,padding:"10px 13px"}}>
               <div style={{fontSize:9,color:C.muted,letterSpacing:1,marginBottom:3,textTransform:"uppercase"}}>Hooks que funcionam</div>
-              <div style={{fontSize:12,color:"#FFD580",fontStyle:"italic",lineHeight:1.6}}>{result.estrategiaConteudo.hooksIdeal}</div>
+              <div style={{fontSize:14,color:"#FFD580",fontStyle:"italic",lineHeight:1.6}}>{result.estrategiaConteudo.hooksIdeal}</div>
             </div>}
           </div>
         )}
@@ -1032,14 +1033,14 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
             <div style={{fontSize:9,fontWeight:800,color:"#A8E6A3",letterSpacing:3,marginBottom:12,textTransform:"uppercase"}}>🚀 Oportunidades</div>
             {result.oportunidades.map((o,i)=><div key={i} style={{display:"flex",gap:7,alignItems:"flex-start",marginBottom:7}}>
               <div style={{width:5,height:5,borderRadius:"50%",background:"#A8E6A3",flexShrink:0,marginTop:5}} />
-              <div style={{fontSize:12,color:C.muted,lineHeight:1.4}}>{o}</div>
+              <div style={{fontSize:13,color:C.muted,lineHeight:1.4}}>{o}</div>
             </div>)}
           </div>}
           {result.proximosPassos?.length>0&&<div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
             <div style={{fontSize:9,fontWeight:800,color:"#F5A623",letterSpacing:3,marginBottom:12,textTransform:"uppercase"}}>✅ Próximos Passos</div>
             {result.proximosPassos.map((p,i)=><div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:7}}>
               <div style={{width:18,height:18,borderRadius:"50%",background:"#F5A62318",border:"1px solid #F5A62340",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#F5A623",flexShrink:0}}>{i+1}</div>
-              <div style={{fontSize:12,color:C.muted,lineHeight:1.4,paddingTop:1}}>{p}</div>
+              <div style={{fontSize:13,color:C.muted,lineHeight:1.4,paddingTop:1}}>{p}</div>
             </div>)}
           </div>}
         </div>
@@ -1049,7 +1050,7 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
           <div style={{fontSize:9,fontWeight:800,color:"#FF9090",letterSpacing:3,marginBottom:10,textTransform:"uppercase"}}>⚠️ Pontos de Atenção</div>
           {result.alertas.map((a,i)=><div key={i} style={{display:"flex",gap:7,alignItems:"flex-start",marginBottom:5}}>
             <span style={{color:"#FF9090",flexShrink:0}}>→</span>
-            <div style={{fontSize:12,color:C.muted,lineHeight:1.4}}>{a}</div>
+            <div style={{fontSize:13,color:C.muted,lineHeight:1.4}}>{a}</div>
           </div>)}
         </div>}
 
