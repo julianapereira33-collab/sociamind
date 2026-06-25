@@ -58,8 +58,97 @@ function DigitalBg({ T, opacity = 1 }) {
   );
 }
 
+// ─── Demo Company ─────────────────────────────────────────────────────────────
+const DEMO_ID = "glow-demo";
+const DEMO_DATA = {
+  nomeFantasia:"Glow Studio",slogan:"Sua pele conta a sua história",
+  responsavel:"Ana Beatriz Fontana",cargo:"Fundadora & Diretora Criativa",
+  responsavelBio:"Esteticista há 12 anos, especialista em harmonização facial e skincare avançado. Fundou o Glow Studio em 2019 com a missão de transformar autoestima através de cuidados autorais.",
+  logoUrl:"",logob64:"",fotoResponsavelb64:"",fotoCapa64:"",
+  corPrimaria:"#C8956C",corSecundaria:"#F4E4D4",corAcento:"#8B5E3C",
+  fonteTitulo:"Playfair Display",fonteCorpo:"Poppins",
+  emojisOficiais:"✨💆‍♀️🌸🪷💎",sentimentoMarca:"acolhedor",
+  faixaPreco:"premium",
+  cnpj:"12.345.678/0001-90",site:"https://glowstudio.com.br",
+  emailComercial:"contato@glowstudio.com.br",telefone:"(11) 99876-5432",
+  endereco:"Rua Augusta, 1.450 — Sala 23",bairro:"Consolação",cidade:"São Paulo",estado:"SP",cep:"01304-001",
+  linkMaps:"https://maps.google.com/?q=Glow+Studio+SP",
+  descricao:"O Glow Studio é uma clínica de estética avançada especializada em skincare, harmonização facial e tratamentos corporais premium. Atendemos mulheres que valorizam qualidade, exclusividade e resultados reais. Nosso ambiente foi projetado para proporcionar uma experiência sensorial completa — do aroma à iluminação — porque acreditamos que cuidar da pele é um ato de amor próprio.",
+  missao:"Transformar autoestima e promover bem-estar através de protocolos estéticos personalizados, entregando resultados visíveis com segurança e excelência.",
+  visao:"Ser referência em estética de alta performance em São Paulo, reconhecida pela qualidade dos resultados e pela experiência única de atendimento.",
+  valores:"Excelência, Acolhimento, Inovação, Ética, Empoderamento feminino",
+  diferenciais:"Protocolos exclusivos desenvolvidos internamente, uso de equipamentos de última geração, atendimento personalizado com anamnese completa, ambiente spa premium, resultados documentados com fotos antes/depois.",
+  historia:"Em 2019, Ana Beatriz abriu o Glow Studio em um pequeníssimo espaço no Jardins com apenas 3 equipamentos e 1 funcionária. Em 2 anos, triplicou o faturamento por indicações de clientes satisfeitas. Hoje, com equipe de 8 profissionais, atende mais de 300 clientes/mês em um espaço de 180m².",
+  concorrentes:"Clínicas SPA Alto da Lapa, Dermage, Espaço Zen Aesthetic",
+  premios:"Melhor Clínica de Estética SP 2023 — Prêmio Mulher Empreendedora",
+  depoimentos:'"Reduzi 15 anos do rosto em 3 sessões. Recomendo sem hesitar!" — Claudia M.\n"Ambiente incrível, atendimento impecável. Virei cliente vitalícia." — Renata S.',
+  servicos:"Harmonização Facial, Botox, Preenchimento, Skincare Avançado, Microagulhamento, Limpeza de Pele, Hidratação Profunda, Peel Químico, Massagem Redutora, Drenagem Linfática, Radiofrequência",
+  descricaoBiotipo:"Mulheres 30-55 anos, classes A e B, que buscam resultados reais e experiência premium. Valorizam qualidade acima de preço. Pesquisam muito antes de decidir. São ativas no Instagram e indicam para amigas.",
+  hashtags:"#glowstudio #esteticasp #harmonizacaofacial #skincare #beleza #autoestima #cuidadoscomapele #esteticaavancada #botox #preenchimento #limpezadepele #microagulhamento #radiofrequencia #rejuvenescimento #peleperfeita #spasp #beautysp #mulherque #glowtransformation",
+  topicosSempre:"Resultados antes/depois, dicas de skincare, depoimentos de clientes, bastidores dos procedimentos, promoções exclusivas, educação sobre tratamentos",
+  topicosNunca:"Política, religião, preços de concorrentes, críticas, conteúdo sensacionalista",
+  melhorConteudo:"Reels de transformação antes/depois, stories mostrando o dia a dia da clínica, posts educativos sobre cuidados com a pele",
+  metaRedes:"Atingir 50.000 seguidores no Instagram até dezembro, gerar 80 novos agendamentos/mês via redes sociais",
+  // Redes
+  igHandle:"glowstudio.sp",igUrl:"https://instagram.com/glowstudio.sp",igSeg:"28400",igFreq:"5",igAutoPost:false,
+  fbUrl:"https://facebook.com/glowstudiosp",fbPageId:"100063542178901",fbSeg:"12300",fbAutoPost:false,
+  ttHandle:"glowstudio.sp",ttSeg:"8900",ttAutoPost:false,
+  liUrl:"https://linkedin.com/company/glow-studio-sp",liSeg:"1200",liFreq:"2",liAutoPost:false,
+  ytUrl:"https://youtube.com/@glowstudiosp",ytSeg:"3400",
+  waNome:"Glow Studio",waNumero:"+5511998765432",
+  site:"https://glowstudio.com.br",
+  waCanais:[{id:1,nome:"@GlowStudioOficial",link:"https://whatsapp.com/channel/glowstudio",inscritos:"2.400",autoPost:false}],
+  waListas:[{id:2,nome:"Clientes VIP",contatos:"380",autoPost:false,freq:"Quinzenal"},{id:3,nome:"Leads quentes",contatos:"720",autoPost:false,freq:"Semanal"}],
+  waGrupos:[],
+  // Integrações
+  metaAppId:"",metaSecret:"",metaPageToken:"",metaIgId:"17841407167953443",
+  n8nWebhook:"",mcApiKey:"",
+  // Scanner
+  scannerManual:"Bio Instagram:\n✨ Clínica de Estética Avançada em SP\n💆‍♀️ Harmonização Facial | Skincare | Tratamentos Corporais\n📍 Consolação — SP | Segunda a Sábado\n📲 Agende pelo WhatsApp no link da bio\n🏆 Melhor Clínica Estética SP 2023",
+  // Produtos
+  produtos:[
+    {id:"p1",nome:"Protocolo Glow Facial",subtitulo:"Resultado em 1 sessão",descricao:"Limpeza profunda + microagulhamento + hidratação intensiva. Pele rejuvenescida imediatamente.",publicoAlvo:"Mulheres 30-50 anos com pele opaca ou marcas de expressão",preco:"R$ 380 / sessão",emoji:"✨"},
+    {id:"p2",nome:"Harmonização Facial Completa",subtitulo:"Transformação total",descricao:"Avaliação + botox + preenchimento labial e malar. Protocolo exclusivo assinado pela Dra. Ana.",publicoAlvo:"Mulheres 35-55 anos que buscam rejuvenescimento natural",preco:"A partir de R$ 1.800",emoji:"💎"},
+    {id:"p3",nome:"Pacote Skincare Premium",subtitulo:"6 sessões transformadoras",descricao:"Programa de 6 semanas com protocolos alternados: peel, radiofrequência, microagulhamento e hidratação.",publicoAlvo:"Clientes que buscam resultado progressivo e duradouro",preco:"R$ 1.980 (6 sessões)",emoji:"🌸"},
+    {id:"p4",nome:"Drenagem + Modelagem Corporal",subtitulo:"Corpo em forma",descricao:"Drenagem linfática + massagem modeladora + ultracavitação. Pacote de 10 sessões.",publicoAlvo:"Mulheres pós-cirúrgico ou que buscam redução de medidas",preco:"R$ 2.400 (10 sessões)",emoji:"💆‍♀️"},
+    {id:"p5",nome:"Peel Químico Profissional",subtitulo:"Renovação celular",descricao:"Peeling de glicólico ou retinoico conforme indicação. Resultado: manchas, acne e textura melhorada.",publicoAlvo:"Pele com manchas, acne, textura irregular",preco:"R$ 280 / sessão",emoji:"🪷"},
+  ],
+  // Públicos
+  publicos:[
+    {id:"pb1",nome:"Executiva Exigente",apelido:"Cláudia",idade:"38-52",genero:"fem",descricao:"Alta renda, agenda cheia, não tem tempo a perder. Pesquisa muito antes de agendar. Quer resultado garantido e experiência impecável.",profissao:"Advogada / Executiva / Empresária",renda:"a",dores:"Não tem tempo, medo de resultado artificial, desconfia de clínicas baratas",desejos:"Parecer 10 anos mais jovem sem perder a naturalidade",comportamentoOnline:"Segue perfis de antes/depois, lê avaliações no Google, salva posts de resultados",plataformasFavoritas:"Instagram,LinkedIn",comoChegar:"Conteúdo educativo + depoimentos reais + antes/depois com legenda técnica",ctaPref:"whatsapp"},
+    {id:"pb2",nome:"Mãe que quer se cuidar",apelido:"Fernanda",idade:"32-44",genero:"fem",descricao:"Mãe de 1-2 filhos, prioriza a família, mas quer se sentir bem na própria pele. Culpa por gastar em si mesma. Precisa de empoderamento.",profissao:"Professora / Funcionária pública / Autônoma",renda:"b",dores:"Sente que não cuida de si, autoestima baixa, verba limitada",desejos:"Se olhar no espelho e gostar do que vê",comportamentoOnline:"Muito ativa em grupos de mães, salva dicas de beleza, segue influencers de bem-estar",plataformasFavoritas:"Instagram,WhatsApp",comoChegar:"Posts emocionais de autoestima + preços acessíveis do pacote entrada + parcelamento",ctaPref:"whatsapp"},
+    {id:"pb3",nome:"Noiva / Formanda",apelido:"Isabela",idade:"22-32",genero:"fem",descricao:"Tem evento importante chegando. Altamente motivada, comparando preços, buscando o melhor resultado para o grande dia.",profissao:"Estudante / Profissional liberal júnior",renda:"c",dores:"Medo de não ficar pronta a tempo, orçamento apertado, insegurança sobre procedimentos",desejos:"Estar impecável no dia mais importante da vida",comportamentoOnline:"Pesquisa muito no TikTok e Instagram, salva tudo, pergunta nos stories",plataformasFavoritas:"Instagram,TikTok,WhatsApp",comoChegar:"Conteúdo de preparação pré-evento + cronograma de sessões + pacotes especiais",ctaPref:"whatsapp"},
+  ],
+  // Agenda (conteúdos)
+  agenda:[
+    {id:"ag1",tipo:"Reel",titulo:"Antes e depois — protocolo glow",legenda:"✨ 1 sessão. 1 transformação real.\n\nEssa cliente chegou com pele opaca e saiu com aquele glow que todo mundo nota 🌸\n\nO que fizemos:\n✅ Limpeza profunda\n✅ Microagulhamento\n✅ Hidratação intensiva\n\nResultado imediato, sem downtime.\n\nQuer saber se esse protocolo é para você? DM ou link na bio 💆‍♀️\n\n#glowstudio #microagulhamento #skincare #antesedepois #esteticasp",publicoId:"pb1",plataforma:"Instagram",data:"2025-07-02",hora:"09:00",status:"Ag. aprovação"},
+    {id:"ag2",tipo:"Post Feed",titulo:"3 sinais que sua pele pede socorro",legenda:"Sua pele fala com você. Você está ouvindo? 👇\n\n3 sinais que ela precisa de atenção profissional:\n\n🔴 Opacidade que não some com hidratante\n🔴 Manchas que voltam sempre\n🔴 Poros dilatados e oleosidade excessiva\n\nNão é falta de skincare em casa — é hora de um protocolo profissional.\n\nAgende sua avaliação gratuita 🎁\nLink na bio ou WhatsApp no perfil\n\n#skincare #cuidadoscomapele #glowstudio #dicasdebeleza",publicoId:"pb2",plataforma:"Instagram",data:"2025-07-04",hora:"11:00",status:"Rascunho"},
+    {id:"ag3",tipo:"Story",titulo:"Bastidores do protocolo facial",legenda:"📲 Story sequência:\n1. 'Você sabia que a limpeza de pele certa dura 2x mais?'\n2. [vídeo bastidor da sessão]\n3. 'Resultado dela depois de 45 min aqui com a gente ✨'\n4. 'Próxima vaga: hoje às 14h — responde aqui pra garantir!'",publicoId:"pb2",plataforma:"Instagram",data:"2025-07-03",hora:"14:00",status:"Ag. aprovação"},
+    {id:"ag4",tipo:"TikTok",titulo:"POV: sua pele depois do protocolo glow",legenda:"POV: você entrou duvidando e saiu brilhando 🌟\n\n#glowup #skincaretiktok #esteticasp #transformacao #glowstudio",publicoId:"pb3",plataforma:"TikTok",data:"2025-07-05",hora:"18:00",status:"Rascunho"},
+    {id:"ag5",tipo:"LinkedIn Post",titulo:"Como a estética premium virou negócio de R$2M",legenda:"Em 2019 eu abri uma clínica de estética com R$ 30 mil emprestados e um sonho enorme.\n\nHoje faturamos R$ 2M/ano. O que mudou?\n\n3 decisões que transformaram o negócio:\n→ Parei de competir por preço e comecei a competir por experiência\n→ Investi em tecnologia antes de contratar mais pessoas\n→ Colhi depoimentos de forma sistemática desde o dia 1\n\nA estética é um mercado de R$ 47 bilhões no Brasil. Ainda tem muito espaço.\n\n#empreendedorismo #estetica #negocio #mulherempreendedora",publicoId:"pb1",plataforma:"LinkedIn",data:"2025-07-07",hora:"08:00",status:"Rascunho"},
+    {id:"ag6",tipo:"Carrossel",titulo:"5 perguntas que toda cliente faz antes do botox",legenda:"Slide 1: '5 perguntas que toda mulher tem sobre botox (e as respostas honestas)'\nSlide 2: 'Dói? — Não. Usamos anestésico tópico e agulha finíssima'\nSlide 3: 'Fica artificial? — Depende de quem aplica. Nós fazemos natural'\nSlide 4: 'Quanto dura? — 4 a 6 meses em média'\nSlide 5: 'Qual a idade certa? — Não tem. Tem o momento certo'\nSlide 6: 'CTA: Tire suas dúvidas em avaliação gratuita → link na bio'\n\n#botox #harmonizacaofacial #glowstudio #esteticaavancada",publicoId:"pb1",plataforma:"Instagram",data:"2025-07-09",hora:"09:00",status:"Rascunho"},
+  ],
+  // Campanhas de exemplo
+  campanhas:[
+    {id:"camp1",nome:"Promoção Julho — Limpeza de Pele",tipo:"whatsapp",assunto:"",mensagem:"Oi [nome]! 🌸 Aqui é a Glow Studio.\n\nJulho chegou com uma surpresa especial pra você:\n\n✨ *Limpeza de Pele Completa + Hidratação* por apenas *R$ 199* (normalmente R$ 280)\n\nVagas limitadas — apenas 20 horários disponíveis nessa condição.\n\nQuer garantir o seu? Me responde aqui 😊",publico:"Clientes VIP",agendada:true,data_envio:"2025-07-01",horario:"10:00",status:"agendada",enviadas:0,abertas:0,cliques:0},
+  ],
+  cofre:[
+    {s:"Google Account",e:"glowstudio@gmail.com",p:"",n:"Conta principal da clínica"},
+    {s:"Instagram",e:"glowstudio.sp",p:"",n:"Gerenciado pelo Meta Business Suite"},
+    {s:"Facebook",e:"contato@glowstudio.com.br",p:"",n:"Página vinculada ao IG"},
+    {s:"TikTok",e:"@glowstudio.sp",p:"",n:""},
+    {s:"ManyChat",e:"",p:"",n:"Integração com IG DM"},
+    {s:"Canva",e:"design@glowstudio.com.br",p:"",n:"Conta Pro — Templates prontos"},
+    {s:"WhatsApp Business",e:"+5511998765432",p:"",n:"Número principal"},
+    {s:"Hospedagem",e:"",p:"",n:"glowstudio.com.br — vence em jan/2026"},
+  ],
+  perfilConteudo:[],ordens:[],
+  msgRegras:[],semanaGerada:null,scannerManual:"Bio Instagram:\n✨ Clínica de Estética Avançada em SP\n💆‍♀️ Harmonização Facial | Skincare | Tratamentos Corporais\n📍 Consolação — SP | Segunda a Sábado\n📲 Agende pelo WhatsApp no link da bio\n🏆 Melhor Clínica Estética SP 2023",
+};
+
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const DEFAULT_COMPANIES = [
+  { id:DEMO_ID, name:"Glow Studio", niche:"Estética & Beleza Premium", color:"#C8956C", emoji:"✨", demo:true },
   { id:"dasg",    name:"Das G",                  niche:"Lifestyle / Entretenimento", color:"#FF6B35", emoji:"🔥" },
   { id:"chacara", name:"Chácara Recanto Sereno",  niche:"Eventos / Natureza",         color:"#22C55E", emoji:"🌿" },
   { id:"trato",   name:"Trato Terraplanagem",     niche:"Construção / Serviços",      color:"#D97706", emoji:"🏗️" },
@@ -202,6 +291,12 @@ export default function App({ session, onSignOut }) {
 
   async function openCo(c) {
     setCo(c); setTab("identidade");
+    // Demo: carrega dados pré-definidos, sem persistência
+    if(c.id === DEMO_ID) {
+      setForm({...EMPTY_DATA, ...DEMO_DATA});
+      setView("company");
+      return;
+    }
     let base={...EMPTY_DATA,nomeFantasia:c.name,corPrimaria:c.color};
     // Carrega do localStorage primeiro (rápido)
     const r = storage.get(`smvp-${c.id}`);
@@ -348,15 +443,16 @@ export default function App({ session, onSignOut }) {
         )}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16}}>
           {companies.map(c=>{
-            const d=saved[c.id];
+            const d=c.id===DEMO_ID ? DEMO_DATA : saved[c.id];
             const prods=d?.produtos?.length||0;
             const pubs=d?.publicos?.length||0;
             const pct=d?Math.round(([d.nomeFantasia,d.descricao,d.publicos?.length,d.igHandle,d.metaAppId||d.n8nWebhook,d.cofre?.[0]?.e].filter(Boolean).length/6)*100):0;
-            return <div key={c.id} onClick={()=>openCo(c)} style={{background:mode==="dark"?`${T.surf}EE`:`${T.surf}F8`,border:`1px solid ${d?c.color+"35":T.border}`,borderRadius:18,padding:"20px",cursor:"pointer",transition:"all .18s",position:"relative",overflow:"hidden",backdropFilter:"blur(8px)",boxShadow:T.shadow}}
+            return <div key={c.id} onClick={()=>openCo(c)} style={{background:mode==="dark"?`${T.surf}EE`:`${T.surf}F8`,border:`1px solid ${c.demo?c.color+"60":d?c.color+"35":T.border}`,borderRadius:18,padding:"20px",cursor:"pointer",transition:"all .18s",position:"relative",overflow:"hidden",backdropFilter:"blur(8px)",boxShadow:c.demo?`0 4px 24px ${c.color}25`:T.shadow}}
               onMouseEnter={e=>{e.currentTarget.style.borderColor=c.color+"65";e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow=`0 12px 32px ${c.color}20`;}}
-              onMouseLeave={e=>{e.currentTarget.style.borderColor=d?c.color+"35":T.border;e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=T.shadow;}}>
+              onMouseLeave={e=>{e.currentTarget.style.borderColor=c.demo?c.color+"60":d?c.color+"35":T.border;e.currentTarget.style.transform="";e.currentTarget.style.boxShadow=c.demo?`0 4px 24px ${c.color}25`:T.shadow;}}>
               <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${c.color},${c.color}50,transparent)`}} />
-              {d&&<div style={{position:"absolute",top:14,right:14,fontSize:11,fontWeight:600,color:c.color,background:c.color+"18",padding:"2px 9px",borderRadius:20,border:`1px solid ${c.color}30`}}>{pct}%</div>}
+              {c.demo&&<div style={{position:"absolute",top:14,right:14,fontSize:10,fontWeight:800,color:"#fff",background:`linear-gradient(135deg,${c.color},#8B5E3C)`,padding:"3px 10px",borderRadius:20,letterSpacing:1}}>✦ DEMO</div>}
+              {!c.demo&&d&&<div style={{position:"absolute",top:14,right:14,fontSize:11,fontWeight:600,color:c.color,background:c.color+"18",padding:"2px 9px",borderRadius:20,border:`1px solid ${c.color}30`}}>{pct}%</div>}
               <div style={{display:"flex",gap:12,alignItems:"flex-start",marginTop:2,marginBottom:14}}>
                 <div style={{width:46,height:46,borderRadius:12,background:c.color+"18",border:`1.5px solid ${c.color}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,overflow:"hidden",flexShrink:0}}>
                   {d?.logob64?<img src={d.logob64} style={{width:"100%",height:"100%",objectFit:"cover"}} alt="" />:c.emoji}
@@ -408,11 +504,18 @@ export default function App({ session, onSignOut }) {
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           {/* Badge aprovações pendentes */}
           {(()=>{const pend=(form.agenda||[]).filter(a=>["Rascunho","Ag. aprovação","Alteração"].includes(a.status)).length;return pend>0&&<button onClick={()=>setTab("aprovacoes")} style={{background:"#FF4566"+"18",border:"1px solid #FF456640",color:"#FF4566",padding:"6px 12px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:5}}><BellRing size={13}/>{pend} pendente{pend>1?"s":""}</button>;})()}
-          <button onClick={save} disabled={saving} style={{background:`linear-gradient(135deg,${co.color},${co.color}CC)`,color:"#fff",border:"none",padding:"8px 22px",borderRadius:9,cursor:"pointer",fontWeight:600,fontSize:13,opacity:saving?.7:1,boxShadow:`0 4px 18px ${co.color}40`,display:"flex",alignItems:"center",gap:7,fontFamily:"'Inter',sans-serif"}}>
+          {co?.id!==DEMO_ID&&<button onClick={save} disabled={saving} style={{background:`linear-gradient(135deg,${co.color},${co.color}CC)`,color:"#fff",border:"none",padding:"8px 22px",borderRadius:9,cursor:"pointer",fontWeight:600,fontSize:13,opacity:saving?.7:1,boxShadow:`0 4px 18px ${co.color}40`,display:"flex",alignItems:"center",gap:7,fontFamily:"'Inter',sans-serif"}}>
             <Save size={14}/> {saving?"Salvando…":"Salvar"}
-          </button>
+          </button>}
         </div>
       </div>
+
+      {/* Banner demo */}
+      {co?.id===DEMO_ID&&<div style={{background:`linear-gradient(90deg,#C8956C18,#8B5E3C18)`,borderBottom:`1px solid #C8956C35`,padding:"7px 22px",display:"flex",alignItems:"center",gap:10,fontSize:12}}>
+        <span style={{fontWeight:800,color:"#C8956C",letterSpacing:1}}>✦ DEMO</span>
+        <span style={{color:"#C8956C99"}}>Ambiente de demonstração — Glow Studio. Explore todas as funcionalidades livremente. Alterações não são salvas.</span>
+        <span style={{marginLeft:"auto",background:"#C8956C20",color:"#C8956C",border:"1px solid #C8956C40",borderRadius:6,padding:"2px 10px",fontWeight:700,fontSize:11}}>Modo simulação</span>
+      </div>}
 
       {/* Tabs */}
       <div style={{background:T.surf,borderBottom:`1px solid ${T.border}`,padding:"0 16px",display:"flex",overflowX:"auto",flexShrink:0,gap:1,scrollbarWidth:"none"}}>
