@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { storage } from "./src/storage.js";
 import { getMode, getTokens, getGradients } from "./src/design.js";
+import { supabase, getOrgData, saveOrgData, getProfile } from "./src/supabase.js";
 import {
   Sparkles, ScanLine, Palette, Package, Users, FileText,
   Calendar, CalendarClock, Smartphone, Plug, Lock,
@@ -148,6 +149,7 @@ export default function App({ session, onSignOut }) {
   const [newCo,     setNewCo]   = useState({name:"",niche:"",color:"#1565C0",emoji:"🏢"});
   const [loggedIn,  setLoggedIn] = useState(false);
   const [mode,      setMode]     = useState(getMode);
+  const [orgId,     setOrgId]    = useState(null);
 
   // Tokens dinâmicos por modo
   const T = useMemo(() => getTokens(mode), [mode]);
@@ -172,9 +174,14 @@ export default function App({ session, onSignOut }) {
     const lnk = document.createElement("link"); lnk.rel="stylesheet"; lnk.href=FONT_URL; document.head.appendChild(lnk);
     document.body.style.background = T.bg;
     const localSession = storage.get("sociamind-session");
-    // Se Supabase autenticou (prop session) ou tem sessão local, entra direto
     if(session || localSession) { setLoggedIn(true); setView("home"); }
     loadAll();
+    // Busca org_id do perfil Supabase
+    if(session?.user?.id) {
+      getProfile(session.user.id).then(profile => {
+        if(profile?.org_id) setOrgId(profile.org_id);
+      });
+    }
   }, []);
 
   // Atualiza background quando modo muda
@@ -192,21 +199,38 @@ export default function App({ session, onSignOut }) {
     setSaved(s);
   }
 
-  function openCo(c) {
+  async function openCo(c) {
     setCo(c); setTab("identidade");
     let base={...EMPTY_DATA,nomeFantasia:c.name,corPrimaria:c.color};
+    // Carrega do localStorage primeiro (rápido)
     const r = storage.get(`smvp-${c.id}`);
     if(r) base={...base,...JSON.parse(r.value)};
     setForm(base); setView("company");
+    // Carrega do Supabase em paralelo e mescla (fonte de verdade)
+    if(orgId) {
+      try {
+        const remote = await getOrgData(orgId);
+        if(remote?.data && Object.keys(remote.data).length > 0) {
+          const merged = {...base, ...remote.data};
+          setForm(merged);
+          storage.set(`smvp-${c.id}`, JSON.stringify(merged));
+        }
+      } catch(e) { console.error("Erro ao carregar dados remotos:", e); }
+    }
   }
 
-  function save() {
+  async function save() {
     setSaving(true);
     try{
+      // Salva localmente (fallback offline)
       storage.set(`smvp-${co.id}`, JSON.stringify(form));
       setSaved(p=>({...p,[co.id]:form}));
+      // Salva no Supabase se autenticado
+      if(orgId) {
+        await saveOrgData(orgId, form);
+      }
       flash("✓ Salvo com sucesso!","teal");
-    }catch{ flash("Erro ao salvar","coral"); }
+    }catch(e){ flash("Erro ao salvar","coral"); console.error(e); }
     setSaving(false);
   }
 
