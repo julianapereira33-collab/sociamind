@@ -99,7 +99,8 @@ const EMPTY_DATA = {
   igHandle:"",igUrl:"",igSeg:"",igFreq:"",igAutoPost:false,
   fbUrl:"",fbPageId:"",fbSeg:"",fbAutoPost:false,
   ttHandle:"",ttSeg:"",ttAutoPost:false,
-  ytUrl:"",ytSeg:"",
+  ytUrl:"",ytSeg:"",liUrl:"",liSeg:"",liFreq:"",liAutoPost:false,
+  scannerManual:"",
   hashtags:"",hashtagsNunca:"",melhorConteudo:"",metaRedes:"",
   // Integrações
   metaAppId:"",metaSecret:"",metaPageToken:"",metaIgId:"",
@@ -613,7 +614,9 @@ export default function App({ session, onSignOut }) {
       whatsapp:  form.waNumero || "",
       extra:     "",
     };
-    const [manual, setManual] = useState("");
+    // manual fica no form para sobreviver a trocas de aba
+    const manual = form.scannerManual || "";
+    const setManual = (v) => upd("scannerManual", typeof v === "function" ? v(manual) : v);
     const [editMode, setEditMode] = useState(false);
     const [editData, setEditData] = useState(null);
     const [phase, setPhase] = useState("idle"); // idle | scanning | done | error
