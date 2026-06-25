@@ -9,7 +9,7 @@ import {
   Image, Megaphone, Settings, Eye, EyeOff, Trash2,
   Edit3, Star, TrendingUp, Globe, MessageSquare, Shield,
   Mail, Radio, Check, X, RefreshCw, ChevronDown, ChevronUp, Upload, LogIn,
-  ClipboardCheck, BellRing, LayoutDashboard, Bot, Crown, Activity, Linkedin
+  ClipboardCheck, BellRing, LayoutDashboard, Bot, Crown, Activity, HelpCircle
 } from "lucide-react";
 // inp is defined inside App() as a useMemo
 const FONT_URL = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Bebas+Neue&family=Anton&family=Abril+Fatface&family=Oswald:wght@600&family=Playfair+Display:ital,wght@0,700;1,400&family=Merriweather:wght@700&family=Montserrat:wght@700&family=Poppins:wght@400;600;700&family=Raleway:wght@700&family=Josefin+Sans:wght@700&family=Nunito:wght@800&family=DM+Sans:wght@700&family=Dancing+Script:wght@700&family=Pacifico&family=Lobster&family=Sacramento&family=Cormorant+Garamond:wght@700&family=Libre+Baskerville:wght@700&display=swap";
@@ -130,6 +130,7 @@ const TABS = [
   {id:"gerar",      Icon:Sparkles,        label:"Gerar"},
   {id:"integracoes",Icon:Plug,            label:"Integrações"},
   {id:"cofre",      Icon:Lock,            label:"Cofre"},
+  {id:"ajuda",      Icon:HelpCircle,      label:"Ajuda"},
 ];
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
@@ -426,6 +427,7 @@ export default function App({ session, onSignOut }) {
           {tab==="campanhas"   &&<TabCampanhas />}
           {tab==="aprovacoes"  &&<TabAprovacoes />}
           {tab==="cofre"       &&<TabCofre />}
+          {tab==="ajuda"       &&<TabAjuda />}
         </div>
       </div>
     </div>
@@ -576,10 +578,17 @@ export default function App({ session, onSignOut }) {
 
   // ─── SCANNER IA ────────────────────────────────────────────────────────────
   function TabScanner(){
-    const [urls, setUrls] = useState({
-      instagram:"", facebook:"", tiktok:"", site:"",
-      whatsapp:"", youtube:"", linkedin:"", extra:""
-    });
+    // Contas fixas — vêm da aba Redes, não podem ser alteradas aqui
+    const urls = {
+      instagram: form.igUrl || (form.igHandle ? `https://instagram.com/${form.igHandle}` : ""),
+      facebook:  form.fbUrl  || "",
+      tiktok:    form.ttHandle ? `https://tiktok.com/@${form.ttHandle}` : "",
+      linkedin:  form.liUrl  || "",
+      site:      form.site   || "",
+      youtube:   form.ytUrl  || "",
+      whatsapp:  form.waNumero || "",
+      extra:     "",
+    };
     const [manual, setManual] = useState("");
     const [editMode, setEditMode] = useState(false);
     const [editData, setEditData] = useState(null);
@@ -888,47 +897,49 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
           </div>
       }
 
-      {/* URL Inputs */}
+      {/* Contas conectadas — somente leitura, vêm da aba Redes */}
       <div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px",marginBottom:14}}>
-        <div style={{fontSize:9,fontWeight:900,letterSpacing:3,background:G.hero,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",marginBottom:14,textTransform:"uppercase"}}>Perfis & Links da Marca</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-          {[
-            ["🟣","Instagram","instagram","@usuario ou link completo"],
-            ["🔵","Facebook","facebook","Link da página ou @"],
-            ["⚫","TikTok","tiktok","@usuario"],
-            ["🌐","Site / Blog","site","https://seusite.com.br"],
-            ["🔴","YouTube","youtube","Link do canal"],
-            ["🔷","LinkedIn","linkedin","linkedin.com/company/…"],
-            ["🟢","WhatsApp Business","whatsapp","Número ou link wa.me/…"],
-          ].map(([icon,label,key,ph])=>(
-            <div key={key}>
-              <label style={{display:"block",fontSize:11,fontWeight:700,color:C.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:.5}}>{icon} {label}</label>
-              <input value={urls[key]} onChange={e=>setUrls(p=>({...p,[key]:e.target.value}))} placeholder={ph}
-                style={{...inp,fontFamily:"inherit",borderColor:urls[key]?"#F5A62340":C.border2}} />
-            </div>
-          ))}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+          <div style={{fontSize:9,fontWeight:900,letterSpacing:3,background:G.hero,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",textTransform:"uppercase"}}>Contas Conectadas — serão analisadas</div>
+          <button onClick={()=>setTab("redes")} style={{fontSize:11,background:"none",border:`1px solid ${T.primary}40`,color:T.primaryL,borderRadius:7,padding:"4px 12px",cursor:"pointer",fontWeight:600}}>⚙ Gerenciar na aba Redes</button>
         </div>
-        <div>
+        {[
+          ["🟣","Instagram","instagram","#E1306C"],
+          ["🔵","Facebook","facebook","#1877F2"],
+          ["⚫","TikTok","tiktok","#00F2EA"],
+          ["🔷","LinkedIn","linkedin","#0A66C2"],
+          ["🌐","Site","site",T.primary],
+          ["🔴","YouTube","youtube","#FF0000"],
+          ["🟢","WhatsApp","whatsapp","#25D366"],
+        ].filter(([,,key])=>urls[key]).length === 0
+          ? <div style={{textAlign:"center",padding:"20px 0",color:C.muted,fontSize:13}}>
+              Nenhuma conta cadastrada. <button onClick={()=>setTab("redes")} style={{background:"none",border:"none",color:T.primaryL,cursor:"pointer",fontWeight:700,fontSize:13}}>Configure na aba Redes →</button>
+            </div>
+          : <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+            {[
+              ["🟣","Instagram","instagram","#E1306C"],
+              ["🔵","Facebook","facebook","#1877F2"],
+              ["⚫","TikTok","tiktok","#00F2EA"],
+              ["🔷","LinkedIn","linkedin","#0A66C2"],
+              ["🌐","Site","site",T.primary],
+              ["🔴","YouTube","youtube","#FF0000"],
+              ["🟢","WhatsApp","whatsapp","#25D366"],
+            ].filter(([,,key])=>urls[key]).map(([icon,label,key,color])=>(
+              <div key={key} style={{display:"flex",alignItems:"center",gap:6,background:`${color}12`,border:`1px solid ${color}35`,borderRadius:9,padding:"8px 14px"}}>
+                <span style={{fontSize:14}}>{icon}</span>
+                <span style={{fontSize:12,fontWeight:700,color}}>{label}</span>
+                <span style={{fontSize:11,color:C.muted,maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{urls[key]}</span>
+                <span style={{fontSize:10,background:`${color}20`,color,borderRadius:4,padding:"1px 5px",fontWeight:700}}>✓ conectado</span>
+              </div>
+            ))}
+          </div>
+        }
+        <div style={{marginTop:14}}>
           <label style={{display:"block",fontSize:11,fontWeight:700,color:"#F5A623",marginBottom:4,textTransform:"uppercase",letterSpacing:.5}}>⭐ Cole aqui o conteúdo real do perfil — Bio, posts, site, produtos (quanto mais info, melhor a análise)</label>
           <textarea value={manual} onChange={e=>setManual(e.target.value)} rows={5}
             placeholder={`Cole aqui o máximo de informação real da marca — a IA não acessa a internet:\n\n• Bio completa do Instagram\n• Texto do site (sobre, serviços, produtos)\n• Lista de produtos/serviços com preços\n• Descrição do público que já atende\n• Últimas legendas de posts\n• Qualquer texto que represente a marca`}
             style={{...inp,resize:"vertical",lineHeight:1.7,fontFamily:"inherit",fontSize:13}} />
         </div>
-        {/* Preview de confirmação dos perfis */}
-        {(igHandle||fbHandle||ttHandle||ytHandle||urls.whatsapp||urls.site)&&(
-          <div style={{marginTop:14,background:C.surf3,border:`1px solid ${T.primary}25`,borderRadius:10,padding:"12px 14px"}}>
-            <div style={{fontSize:10,fontWeight:800,color:T.primaryL,letterSpacing:2,textTransform:"uppercase",marginBottom:8}}>Confirme os perfis antes de analisar</div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-              {igHandle&&<a href={`https://instagram.com/${igHandle}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:6,background:"#E1306C18",border:"1px solid #E1306C40",borderRadius:8,padding:"6px 12px",textDecoration:"none",color:"#E1306C",fontSize:13,fontWeight:600}}>🟣 @{igHandle} <span style={{fontSize:10,opacity:.7}}>↗ verificar</span></a>}
-              {fbHandle&&<a href={`https://facebook.com/${fbHandle}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:6,background:"#1877F218",border:"1px solid #1877F240",borderRadius:8,padding:"6px 12px",textDecoration:"none",color:"#1877F2",fontSize:13,fontWeight:600}}>🔵 {fbHandle} <span style={{fontSize:10,opacity:.7}}>↗ verificar</span></a>}
-              {ttHandle&&<a href={`https://tiktok.com/@${ttHandle}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:6,background:"#00F2EA18",border:"1px solid #00F2EA40",borderRadius:8,padding:"6px 12px",textDecoration:"none",color:"#00F2EA",fontSize:13,fontWeight:600}}>⚫ @{ttHandle} <span style={{fontSize:10,opacity:.7}}>↗ verificar</span></a>}
-              {ytHandle&&<a href={`https://youtube.com/@${ytHandle}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:6,background:"#FF000018",border:"1px solid #FF000040",borderRadius:8,padding:"6px 12px",textDecoration:"none",color:"#FF4444",fontSize:13,fontWeight:600}}>🔴 @{ytHandle} <span style={{fontSize:10,opacity:.7}}>↗ verificar</span></a>}
-              {urls.site&&<a href={urls.site.startsWith("http")?urls.site:`https://${urls.site}`} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:6,background:`${T.primary}18`,border:`1px solid ${T.primary}40`,borderRadius:8,padding:"6px 12px",textDecoration:"none",color:T.primaryL,fontSize:13,fontWeight:600}}>🌐 {urls.site.replace(/^https?:\/\//,"")} <span style={{fontSize:10,opacity:.7}}>↗ verificar</span></a>}
-              {urls.whatsapp&&<span style={{display:"flex",alignItems:"center",gap:6,background:"#25D36618",border:"1px solid #25D36640",borderRadius:8,padding:"6px 12px",color:"#25D366",fontSize:13,fontWeight:600}}>🟢 {urls.whatsapp}</span>}
-            </div>
-            <div style={{fontSize:11,color:C.muted,marginTop:8}}>Clique nos links para confirmar que são os perfis corretos antes de gastar tokens na análise.</div>
-          </div>
-        )}
 
         <div style={{marginTop:14,display:"flex",gap:10,alignItems:"center"}}>
           <button onClick={runScan} disabled={phase==="scanning"} style={{background:phase==="scanning"?C.surf3:G.primary,color:phase==="scanning"?C.muted:"#fff",border:"none",padding:"11px 28px",borderRadius:10,cursor:phase==="scanning"?"default":"pointer",fontWeight:700,fontSize:14,boxShadow:phase==="scanning"?"none":`0 4px 24px ${T.primary}45`,display:"flex",alignItems:"center",gap:8}}>
@@ -1432,6 +1443,12 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
       {/* TikTok */}
       <Sec title="TikTok" accent="#FF0050">
         <G3 ch={[<F label="@ do perfil"><I k="ttHandle" ph="@suamarca" /></F>,<F label="Seguidores"><I k="ttSeg" ph="500" type="number" /></F>,<F label="Publicação automática"><div style={{marginTop:6}}><Toggle val={form.ttAutoPost} onChange={v=>upd("ttAutoPost",v)} label={form.ttAutoPost?"Ativada":"Desativada"} /></div></F>]} />
+      </Sec>
+
+      {/* LinkedIn */}
+      <Sec title="LinkedIn" accent="#0A66C2">
+        <G2 ch={[<F label="URL da página/perfil"><I k="liUrl" ph="https://linkedin.com/company/suamarca" /></F>,<F label="Seguidores"><I k="liSeg" ph="0" type="number" /></F>]} />
+        <G2 ch={[<F label="Posts/semana"><I k="liFreq" ph="2" type="number" /></F>,<F label="Publicação automática"><div style={{marginTop:6}}><Toggle val={form.liAutoPost} onChange={v=>upd("liAutoPost",v)} label={form.liAutoPost?"Ativada":"Desativada"} /></div></F>]} />
       </Sec>
 
       {/* WhatsApp Business */}
@@ -2926,6 +2943,162 @@ Retorne APENAS o texto do post LinkedIn pronto para publicar. Máximo 1.300 cara
         </Sec>
       ))}
       <button onClick={()=>upd("cofre",[...cofre,{s:"Novo serviço",e:"",p:"",n:""}])} style={{width:"100%",background:"none",border:`1.5px dashed ${C.border2}`,color:C.muted,padding:"12px",borderRadius:11,cursor:"pointer",fontSize:13}}>+ Adicionar serviço</button>
+    </>;
+  }
+
+  // ─── AJUDA ────────────────────────────────────────────────────────────────────
+  function TabAjuda(){
+    const [chatMsgs, setChatMsgs] = useState([
+      {role:"assistant", text:"Olá! Sou a assistente especialista do SociaMinD. Estou aqui para te ajudar a tirar o máximo do sistema — tire suas dúvidas, peça dicas de uso, ou clique em um tópico abaixo para começar. 😊"}
+    ]);
+    const [input, setInput] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [secao, setSecao] = useState("chat"); // chat | tour | manual
+    const chatRef = useRef(null);
+
+    const SYSTEM_PROMPT = `Você é a assistente especialista do SociaMinD, um sistema de gestão de redes sociais com IA.
+Você conhece cada aba e funcionalidade do sistema:
+- Relatório: dashboard com métricas e gráfico de crescimento
+- Scanner IA: analisa a marca com IA e preenche todos os campos automaticamente — usa as contas já cadastradas na aba Redes
+- Identidade: informações da empresa, cores, fontes, personas, descrição da marca
+- Produtos: catálogo de produtos e serviços com preços
+- Públicos: perfis de público-alvo e personas
+- Redes: cadastro das redes sociais conectadas (Instagram, Facebook, TikTok, LinkedIn, WhatsApp, YouTube)
+- Conteúdos: hub de conteúdo com agendamento, ordens de serviço, geração de semana com IA, aprovações
+- Campanha: criação de campanhas de WhatsApp, Email e LinkedIn com disparo e IA
+- Aprovações: fluxo de aprovação de conteúdo — cliente aprova ou rejeita posts
+- Gerar: geração rápida de posts com IA por plataforma
+- Integrações: configuração de Meta Graph API, ManyChat, Canva, N8N, WhatsApp (Zapi)
+- Cofre: senhas e credenciais de acesso
+- Ajuda: você está aqui!
+
+Planos disponíveis: Solo (1 marca, 3 redes, 1 scanner/mês), Negócio (1 marca, 5 redes, 3 scanners/mês), Agência (ilimitado, 5 scanners/rede), Agent Secret (tudo ilimitado + automação total).
+Responda de forma clara, direta e amigável em português. Máximo 3 parágrafos por resposta.`;
+
+    async function sendChat(){
+      if(!input.trim()||loading) return;
+      const userMsg = input.trim();
+      setInput("");
+      setChatMsgs(p=>[...p,{role:"user",text:userMsg}]);
+      setLoading(true);
+      try {
+        const res = await fetch("/api/claude",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({
+            messages:[
+              ...chatMsgs.filter(m=>m.role!=="assistant"||chatMsgs.indexOf(m)>0).map(m=>({role:m.role,content:m.text})),
+              {role:"user",content:userMsg}
+            ],
+            system: SYSTEM_PROMPT,
+            max_tokens:600,
+          })
+        });
+        const data = await res.json();
+        const reply = data.content?.[0]?.text || data.reply || "Não entendi. Pode reformular?";
+        setChatMsgs(p=>[...p,{role:"assistant",text:reply}]);
+      } catch {
+        setChatMsgs(p=>[...p,{role:"assistant",text:"Ocorreu um erro. Tente novamente."}]);
+      }
+      setLoading(false);
+      setTimeout(()=>chatRef.current?.scrollTo({top:99999,behavior:"smooth"}),100);
+    }
+
+    const TOUR_STEPS = [
+      {icon:"🔍",tab:"scanner",title:"1. Comece pelo Scanner IA",desc:"O primeiro passo é rodar o Scanner. Cadastre as redes na aba Redes, depois venha aqui e clique em Analisar. A IA preenche tudo automaticamente — identidade, personas, produtos e estratégia."},
+      {icon:"🎨",tab:"identidade",title:"2. Revise a Identidade",desc:"Após o scanner, verifique as cores, fontes, missão, visão e valores gerados. Ajuste o que quiser — tudo impacta os conteúdos gerados pela IA."},
+      {icon:"👥",tab:"publicos",title:"3. Valide os Públicos",desc:"A IA cria personas automaticamente. Revise, ajuste os detalhes e adicione públicos específicos que o scanner pode ter perdido."},
+      {icon:"📱",tab:"redes",title:"4. Configure as Redes",desc:"Cadastre todas as redes sociais do cliente — Instagram, Facebook, TikTok, LinkedIn, YouTube. Esses dados alimentam o scanner e o agendamento."},
+      {icon:"📅",tab:"conteudo",title:"5. Gere Conteúdo",desc:"Na aba Conteúdos, use 'Gerar semana com IA' para criar uma agenda completa de posts. Revise cada legenda e envie para aprovação."},
+      {icon:"✅",tab:"aprovacoes",title:"6. Fluxo de Aprovação",desc:"O cliente recebe notificação no WhatsApp e aprova ou rejeita cada post. Você acompanha tudo em tempo real na aba Aprovações."},
+      {icon:"📢",tab:"campanhas",title:"7. Crie Campanhas",desc:"Lance campanhas de WhatsApp, E-mail ou LinkedIn. A IA gera o texto e você dispara para a lista configurada."},
+      {icon:"📊",tab:"resultados",title:"8. Acompanhe Resultados",desc:"O Relatório mostra o crescimento antes e depois, métricas por rede e evolução mês a mês. Use para mostrar o valor do seu trabalho ao cliente."},
+    ];
+
+    const MANUAL_SECTIONS = [
+      {title:"Scanner IA",icon:"🔍",content:"O Scanner analisa a marca com IA usando as contas cadastradas na aba Redes. Cole também textos da bio, site e posts para enriquecer a análise. Cada plano tem um limite de execuções por mês. O resultado preenche automaticamente: Identidade, Personas, Produtos e Estratégia de conteúdo."},
+      {title:"Aba Redes",icon:"📱",content:"Cadastre aqui todas as redes sociais do cliente. Os dados são usados pelo Scanner (como contas fixas a analisar) e pelo sistema de publicação. Ative 'Publicação automática' em cada rede para liberar postagem direta via integração."},
+      {title:"Geração de Conteúdo",icon:"✍️",content:"Em Conteúdos > Solicitar, crie uma Ordem de Serviço com briefing. A IA gera roteiro, legendas e sugestões de imagem. Você edita, aprova e agenda. Em Gerar (aba), você pode criar posts rápidos por plataforma sem abrir uma OS."},
+      {title:"Aprovações",icon:"✅",content:"Todo conteúdo gerado pode ser enviado para aprovação do cliente. O cliente recebe notificação no WhatsApp, clica no link e aprova ou rejeita. Você vê o status em tempo real. Conteúdo aprovado pode ser agendado automaticamente."},
+      {title:"Campanhas",icon:"📢",content:"Crie campanhas de disparo para WhatsApp (via Zapi), E-mail ou LinkedIn. A IA gera a mensagem com base na marca. Configure listas de destinatários na aba Redes (Listas de Transmissão). Cada plano tem limite de disparos mensais."},
+      {title:"White-label",icon:"🎨",content:"O sistema adapta cores e identidade visual para cada cliente automaticamente. A cor primária cadastrada em Identidade define o tema visual do painel daquele cliente. Cada empresa tem seu ambiente isolado."},
+      {title:"Integrações",icon:"🔌",content:"Configure Meta Graph API para buscar dados reais do Instagram. Configure Zapi para disparar WhatsApp. ManyChat para automações de DM. Canva para templates. N8N para workflows avançados. Todas as credenciais ficam salvas por empresa."},
+      {title:"Planos e Limites",icon:"💳",content:"Solo: 1 marca, 3 redes, 1 scanner/mês. Negócio: 1 marca, 5 redes, 3 scanners/mês, campanhas. Agência: 1 cliente, redes e posts ilimitados, 5 scanners/rede, automação de respostas. Agent Secret: tudo ilimitado + atendimento IA via WhatsApp."},
+    ];
+
+    return <>
+      {/* Header */}
+      <div style={{marginBottom:16,padding:"20px 22px",background:G.glow,border:`1px solid ${T.primary}20`,borderRadius:16,position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",top:-30,right:-30,width:120,height:120,background:`radial-gradient(circle,${T.primary}18,transparent 70%)`}} />
+        <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:10}}>
+          <div style={{width:48,height:48,borderRadius:12,background:G.primary,display:"flex",alignItems:"center",justifyContent:"center",boxShadow:`0 0 24px ${T.primary}40`,flexShrink:0}}><HelpCircle size={22} color="#fff" strokeWidth={2}/></div>
+          <div>
+            <div style={{fontSize:18,fontWeight:700,background:G.hero,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>Central de Ajuda</div>
+            <div style={{fontSize:12,color:C.muted,marginTop:2}}>Assistente IA especialista no sistema, tour guiado e manual completo.</div>
+          </div>
+        </div>
+        {/* Sub-abas */}
+        <div style={{display:"flex",gap:6}}>
+          {[["chat","💬 Assistente IA"],["tour","🗺️ Tour"],["manual","📖 Manual"]].map(([k,l])=>(
+            <button key={k} onClick={()=>setSecao(k)} style={{padding:"6px 16px",borderRadius:8,border:`1px solid ${secao===k?T.primary+"60":C.border2}`,background:secao===k?`${T.primary}18`:C.surf3,color:secao===k?T.primaryL:C.muted,fontSize:12,fontWeight:secao===k?700:400,cursor:"pointer"}}>{l}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Chat */}
+      {secao==="chat"&&<>
+        <div ref={chatRef} style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px",marginBottom:12,height:380,overflowY:"auto",display:"flex",flexDirection:"column",gap:10}}>
+          {chatMsgs.map((m,i)=>(
+            <div key={i} style={{display:"flex",gap:8,flexDirection:m.role==="user"?"row-reverse":"row",alignItems:"flex-start"}}>
+              {m.role==="assistant"&&<div style={{width:28,height:28,borderRadius:"50%",background:G.primary,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13}}>🤖</div>}
+              <div style={{maxWidth:"75%",background:m.role==="user"?`${T.primary}20`:C.surf3,border:`1px solid ${m.role==="user"?T.primary+"30":C.border2}`,borderRadius:m.role==="user"?"14px 14px 4px 14px":"14px 14px 14px 4px",padding:"10px 14px",fontSize:13,color:C.text,lineHeight:1.6,whiteSpace:"pre-wrap"}}>
+                {m.text}
+              </div>
+            </div>
+          ))}
+          {loading&&<div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+            <div style={{width:28,height:28,borderRadius:"50%",background:G.primary,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13}}>🤖</div>
+            <div style={{background:C.surf3,border:`1px solid ${C.border2}`,borderRadius:"14px 14px 14px 4px",padding:"10px 14px",fontSize:13,color:C.muted}}>Digitando…</div>
+          </div>}
+        </div>
+        {/* Perguntas rápidas */}
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:10}}>
+          {["Como usar o Scanner?","Como aprovar conteúdo?","Como configurar o WhatsApp?","O que cada plano inclui?","Como gerar posts com IA?"].map(q=>(
+            <button key={q} onClick={()=>{setInput(q);}} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${T.primary}40`,background:`${T.primary}10`,color:T.primaryL,fontSize:11,fontWeight:600,cursor:"pointer"}}>{q}</button>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&sendChat()} placeholder="Digite sua dúvida..." style={{...inp,flex:1,fontFamily:"inherit"}} />
+          <button onClick={sendChat} disabled={loading||!input.trim()} style={{background:G.primary,color:"#fff",border:"none",padding:"0 20px",borderRadius:10,cursor:"pointer",fontWeight:700,opacity:loading||!input.trim()?0.5:1}}>Enviar</button>
+        </div>
+      </>}
+
+      {/* Tour */}
+      {secao==="tour"&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {TOUR_STEPS.map((s,i)=>(
+          <div key={i} style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",display:"flex",gap:14,alignItems:"flex-start"}}>
+            <div style={{width:42,height:42,borderRadius:10,background:`${T.primary}15`,border:`1px solid ${T.primary}30`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{s.icon}</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:4}}>{s.title}</div>
+              <div style={{fontSize:12,color:C.muted,lineHeight:1.6}}>{s.desc}</div>
+            </div>
+            <button onClick={()=>setTab(s.tab)} style={{background:G.primary,color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontSize:11,fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}>Ir →</button>
+          </div>
+        ))}
+      </div>}
+
+      {/* Manual */}
+      {secao==="manual"&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {MANUAL_SECTIONS.map((s,i)=>(
+          <div key={i} style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:12,padding:"16px 18px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+              <span style={{fontSize:18}}>{s.icon}</span>
+              <div style={{fontSize:14,fontWeight:700,color:C.text}}>{s.title}</div>
+            </div>
+            <div style={{fontSize:13,color:C.muted,lineHeight:1.7}}>{s.content}</div>
+          </div>
+        ))}
+      </div>}
     </>;
   }
 }
