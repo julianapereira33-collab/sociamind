@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+﻿import { useState, useEffect, useRef, useMemo } from "react";
 import { storage } from "./src/storage.js";
 import { getMode, getTokens, getGradients } from "./src/design.js";
 import { supabase, getOrgData, saveOrgData, getProfile } from "./src/supabase.js";
@@ -59,96 +59,86 @@ function DigitalBg({ T, opacity = 1 }) {
 }
 
 // ─── Demo Company ─────────────────────────────────────────────────────────────
-const DEMO_ID = "glow-demo";
+const DEMO_ID = "socialmid-demo";
 const DEMO_DATA = {
-  nomeFantasia:"Glow Studio",slogan:"Sua pele conta a sua história",
-  responsavel:"Ana Beatriz Fontana",cargo:"Fundadora & Diretora Criativa",
-  responsavelBio:"Esteticista há 12 anos, especialista em harmonização facial e skincare avançado. Fundou o Glow Studio em 2019 com a missão de transformar autoestima através de cuidados autorais.",
+  nomeFantasia:"Social Mid-IA",slogan:"Sua gestão de redes no piloto automático — com IA",
+  responsavel:"Juliana Pereira",cargo:"CEO & Fundadora",
+  responsavelBio:"Especialista em marketing digital há 10 anos, fundou a Social Mid-IA para democratizar o acesso à gestão profissional de redes sociais com inteligência artificial. Antes gerenciava mais de 40 clientes manualmente — hoje a IA faz isso por ela.",
   logoUrl:"",logob64:"",fotoResponsavelb64:"",fotoCapa64:"",
-  corPrimaria:"#C8956C",corSecundaria:"#F4E4D4",corAcento:"#8B5E3C",
-  fonteTitulo:"Playfair Display",fonteCorpo:"Poppins",
-  emojisOficiais:"✨💆‍♀️🌸🪷💎",sentimentoMarca:"acolhedor",
-  faixaPreco:"premium",
-  cnpj:"12.345.678/0001-90",site:"https://glowstudio.com.br",
-  emailComercial:"contato@glowstudio.com.br",telefone:"(11) 99876-5432",
-  endereco:"Rua Augusta, 1.450 — Sala 23",bairro:"Consolação",cidade:"São Paulo",estado:"SP",cep:"01304-001",
-  linkMaps:"https://maps.google.com/?q=Glow+Studio+SP",
-  descricao:"O Glow Studio é uma clínica de estética avançada especializada em skincare, harmonização facial e tratamentos corporais premium. Atendemos mulheres que valorizam qualidade, exclusividade e resultados reais. Nosso ambiente foi projetado para proporcionar uma experiência sensorial completa — do aroma à iluminação — porque acreditamos que cuidar da pele é um ato de amor próprio.",
-  missao:"Transformar autoestima e promover bem-estar através de protocolos estéticos personalizados, entregando resultados visíveis com segurança e excelência.",
-  visao:"Ser referência em estética de alta performance em São Paulo, reconhecida pela qualidade dos resultados e pela experiência única de atendimento.",
-  valores:"Excelência, Acolhimento, Inovação, Ética, Empoderamento feminino",
-  diferenciais:"Protocolos exclusivos desenvolvidos internamente, uso de equipamentos de última geração, atendimento personalizado com anamnese completa, ambiente spa premium, resultados documentados com fotos antes/depois.",
-  historia:"Em 2019, Ana Beatriz abriu o Glow Studio em um pequeníssimo espaço no Jardins com apenas 3 equipamentos e 1 funcionária. Em 2 anos, triplicou o faturamento por indicações de clientes satisfeitas. Hoje, com equipe de 8 profissionais, atende mais de 300 clientes/mês em um espaço de 180m².",
-  concorrentes:"Clínicas SPA Alto da Lapa, Dermage, Espaço Zen Aesthetic",
-  premios:"Melhor Clínica de Estética SP 2023 — Prêmio Mulher Empreendedora",
-  depoimentos:'"Reduzi 15 anos do rosto em 3 sessões. Recomendo sem hesitar!" — Claudia M.\n"Ambiente incrível, atendimento impecável. Virei cliente vitalícia." — Renata S.',
-  servicos:"Harmonização Facial, Botox, Preenchimento, Skincare Avançado, Microagulhamento, Limpeza de Pele, Hidratação Profunda, Peel Químico, Massagem Redutora, Drenagem Linfática, Radiofrequência",
-  descricaoBiotipo:"Mulheres 30-55 anos, classes A e B, que buscam resultados reais e experiência premium. Valorizam qualidade acima de preço. Pesquisam muito antes de decidir. São ativas no Instagram e indicam para amigas.",
-  hashtags:"#glowstudio #esteticasp #harmonizacaofacial #skincare #beleza #autoestima #cuidadoscomapele #esteticaavancada #botox #preenchimento #limpezadepele #microagulhamento #radiofrequencia #rejuvenescimento #peleperfeita #spasp #beautysp #mulherque #glowtransformation",
-  topicosSempre:"Resultados antes/depois, dicas de skincare, depoimentos de clientes, bastidores dos procedimentos, promoções exclusivas, educação sobre tratamentos",
-  topicosNunca:"Política, religião, preços de concorrentes, críticas, conteúdo sensacionalista",
-  melhorConteudo:"Reels de transformação antes/depois, stories mostrando o dia a dia da clínica, posts educativos sobre cuidados com a pele",
-  metaRedes:"Atingir 50.000 seguidores no Instagram até dezembro, gerar 80 novos agendamentos/mês via redes sociais",
-  // Redes
-  igHandle:"glowstudio.sp",igUrl:"https://instagram.com/glowstudio.sp",igSeg:"28400",igFreq:"5",igAutoPost:false,
-  fbUrl:"https://facebook.com/glowstudiosp",fbPageId:"100063542178901",fbSeg:"12300",fbAutoPost:false,
-  ttHandle:"glowstudio.sp",ttSeg:"8900",ttAutoPost:false,
-  liUrl:"https://linkedin.com/company/glow-studio-sp",liSeg:"1200",liFreq:"2",liAutoPost:false,
-  ytUrl:"https://youtube.com/@glowstudiosp",ytSeg:"3400",
-  waNome:"Glow Studio",waNumero:"+5511998765432",
-  site:"https://glowstudio.com.br",
-  waCanais:[{id:1,nome:"@GlowStudioOficial",link:"https://whatsapp.com/channel/glowstudio",inscritos:"2.400",autoPost:false}],
-  waListas:[{id:2,nome:"Clientes VIP",contatos:"380",autoPost:false,freq:"Quinzenal"},{id:3,nome:"Leads quentes",contatos:"720",autoPost:false,freq:"Semanal"}],
-  waGrupos:[],
-  // Integrações
-  metaAppId:"",metaSecret:"",metaPageToken:"",metaIgId:"17841407167953443",
-  n8nWebhook:"",mcApiKey:"",
-  // Scanner
-  scannerManual:"Bio Instagram:\n✨ Clínica de Estética Avançada em SP\n💆‍♀️ Harmonização Facial | Skincare | Tratamentos Corporais\n📍 Consolação — SP | Segunda a Sábado\n📲 Agende pelo WhatsApp no link da bio\n🏆 Melhor Clínica Estética SP 2023",
-  // Produtos
+  corPrimaria:"#FF4566",corSecundaria:"#00CCA8",corAcento:"#F5A623",
+  fonteTitulo:"Space Grotesk",fonteCorpo:"Inter",
+  emojisOficiais:"🤖✨📱🚀💡",sentimentoMarca:"empoderador",
+  faixaPreco:"medio",
+  cnpj:"45.678.901/0001-23",site:"https://sociamind.vercel.app",
+  emailComercial:"contato@socialmid.com.br",telefone:"(11) 99999-0000",
+  endereco:"100% digital — atendimento remoto",bairro:"",cidade:"São Paulo",estado:"SP",cep:"",linkMaps:"",
+  descricao:"A Social Mid-IA é uma plataforma SaaS de gestão de redes sociais potencializada por inteligência artificial. Reunimos em um único painel tudo que um social media ou empresário precisa: estratégia gerada por IA, criação de conteúdo, agendamento, aprovações, campanhas de WhatsApp e e-mail, relatórios de crescimento e automação de respostas.",
+  missao:"Democratizar a gestão profissional de redes sociais, permitindo que qualquer empresa — do MEI à agência — tenha acesso a uma estratégia de marketing digital de alto nível, com o poder da IA trabalhando 24h por dia.",
+  visao:"Ser a plataforma número 1 de gestão de redes sociais com IA no Brasil até 2027, presente em mais de 10.000 empresas.",
+  valores:"Inovação, Praticidade, Resultados reais, Transparência, Empoderamento do empreendedor",
+  diferenciais:"Único sistema que combina IA generativa + fluxo de aprovação + WhatsApp nativo + white-label por cliente. Scanner que analisa a marca e preenche toda a estratégia automaticamente. Geração de semana completa de conteúdo em 1 clique.",
+  historia:"Nasceu em 2024 da frustração de gerenciar 40 clientes com 12 ferramentas diferentes. A fundadora Juliana Pereira criou a Social Mid-IA para consolidar estratégia, criação, aprovação e disparo em um único lugar — com IA fazendo o trabalho pesado.",
+  concorrentes:"Buffer, Hootsuite, Later, mLabs, Postgrain",
+  premios:"Finalista Startup do Ano — Marketing Tech Brasil 2025",
+  depoimentos:"\"Reduzi 6 horas de trabalho por cliente para 40 minutos. A IA entende a marca melhor que muita pessoa.\" — Carla M., Social Media\n\"Meu cliente aprova tudo pelo WhatsApp agora. Acabou a burocracia de e-mail.\" — Rafael T., Agência Digital",
+  servicos:"Gestão de redes sociais com IA, Geração de conteúdo, Agendamento inteligente, Fluxo de aprovação, Campanhas WhatsApp e E-mail, Relatórios de crescimento, Automação de respostas, White-label para agências",
+  descricaoBiotipo:"Social medias autônomos, donos de agências digitais e empreendedores que precisam de presença profissional nas redes sem contratar uma equipe grande. Valorizam praticidade, resultado e automação.",
+  hashtags:"#socialmidIA #gestaoderedes #marketingdigital #inteligenciaartificial #socialmedia #automacaomarketing #conteudoIA #agenciadigital #empreendedorismo #marketingIA #redesociais #conteudoautomatico #SaaS #ferramentasdigitais #marketingbrasil #socialmediamanager #IAmarketing",
+  topicosSempre:"Dicas de social media, Resultados de clientes, Automações que economizam tempo, Novidades da plataforma, Educação sobre marketing digital, Comparativos antes/depois da IA",
+  topicosNunca:"Política, polêmicas de concorrentes, promessas irreais de resultado, conteúdo sem embasamento",
+  melhorConteudo:"Carrosséis educativos, Reels mostrando a plataforma em uso, depoimentos de clientes, comparativos antes/depois",
+  metaRedes:"10.000 seguidores no Instagram em 6 meses, 200 trials/mês via redes sociais, comunidade de 500 social medias no WhatsApp",
+  igHandle:"socialmid.ia",igUrl:"https://instagram.com/socialmid.ia",igSeg:"1240",igFreq:"5",igAutoPost:false,
+  fbUrl:"https://facebook.com/socialmidIA",fbPageId:"",fbSeg:"430",fbAutoPost:false,
+  ttHandle:"socialmid.ia",ttSeg:"890",ttAutoPost:false,
+  liUrl:"https://linkedin.com/company/socialmid-ia",liSeg:"560",liFreq:"3",liAutoPost:false,
+  ytUrl:"https://youtube.com/@socialmidIA",ytSeg:"210",
+  waNome:"Social Mid-IA",waNumero:"+5511999990000",
+  waCanais:[{id:1,nome:"@SocialMidIA Oficial",link:"https://whatsapp.com/channel/socialmid",inscritos:"380",autoPost:false}],
+  waListas:[{id:2,nome:"Leads em trial",contatos:"140",autoPost:false,freq:"Semanal"},{id:3,nome:"Clientes ativos",contatos:"87",autoPost:false,freq:"Quinzenal"}],
+  waGrupos:[{id:4,nome:"Comunidade Social Midias BR",admin:true,membros:"320",autoPost:false,freq:"2x/semana"}],
+  metaAppId:"",metaSecret:"",metaPageToken:"",metaIgId:"",n8nWebhook:"",mcApiKey:"",
+  scannerManual:"Bio Instagram @socialmid.ia:\n🤖 Gestão de redes com Inteligência Artificial\n📱 Estratégia + Conteúdo + Aprovação + WhatsApp em 1 lugar\n🚀 Teste 7 dias grátis — link na bio\n✨ Sua gestão no piloto automático\n\nSite: sociamind.vercel.app\nPlanos a partir de R$197/mês\nSolo | Negócio | Agência | Agent Secret",
   produtos:[
-    {id:"p1",nome:"Protocolo Glow Facial",subtitulo:"Resultado em 1 sessão",descricao:"Limpeza profunda + microagulhamento + hidratação intensiva. Pele rejuvenescida imediatamente.",publicoAlvo:"Mulheres 30-50 anos com pele opaca ou marcas de expressão",preco:"R$ 380 / sessão",emoji:"✨"},
-    {id:"p2",nome:"Harmonização Facial Completa",subtitulo:"Transformação total",descricao:"Avaliação + botox + preenchimento labial e malar. Protocolo exclusivo assinado pela Dra. Ana.",publicoAlvo:"Mulheres 35-55 anos que buscam rejuvenescimento natural",preco:"A partir de R$ 1.800",emoji:"💎"},
-    {id:"p3",nome:"Pacote Skincare Premium",subtitulo:"6 sessões transformadoras",descricao:"Programa de 6 semanas com protocolos alternados: peel, radiofrequência, microagulhamento e hidratação.",publicoAlvo:"Clientes que buscam resultado progressivo e duradouro",preco:"R$ 1.980 (6 sessões)",emoji:"🌸"},
-    {id:"p4",nome:"Drenagem + Modelagem Corporal",subtitulo:"Corpo em forma",descricao:"Drenagem linfática + massagem modeladora + ultracavitação. Pacote de 10 sessões.",publicoAlvo:"Mulheres pós-cirúrgico ou que buscam redução de medidas",preco:"R$ 2.400 (10 sessões)",emoji:"💆‍♀️"},
-    {id:"p5",nome:"Peel Químico Profissional",subtitulo:"Renovação celular",descricao:"Peeling de glicólico ou retinoico conforme indicação. Resultado: manchas, acne e textura melhorada.",publicoAlvo:"Pele com manchas, acne, textura irregular",preco:"R$ 280 / sessão",emoji:"🪷"},
+    {id:"p1",nome:"Plano Solo",subtitulo:"Para quem gerencia a própria marca",descricao:"1 empresa, 3 redes sociais, 3 posts/semana gerados por IA, 1 scanner/mês, aprovações pelo app, alertas básicos no WhatsApp.",publicoAlvo:"Empreendedor solo, MEI, pequeno negócio",preco:"R$ 197/mês",emoji:"🌱"},
+    {id:"p2",nome:"Plano Negócio",subtitulo:"Mais ferramentas, mais resultados",descricao:"1 empresa, 5 redes incluindo LinkedIn e TikTok, 7 posts/semana, 3 scanners/mês por rede, campanhas, painel de respostas, aprovações via WhatsApp.",publicoAlvo:"Negócio em crescimento, gestor de marketing",preco:"R$ 497/mês",emoji:"🚀"},
+    {id:"p3",nome:"Plano Agência",subtitulo:"Gerencie clientes como um profissional",descricao:"1 cliente completo com tudo ilimitado: redes, posts, 5 scanners/rede, campanhas ilimitadas, automação de respostas, white-label, relatório executivo, suporte prioritário.",publicoAlvo:"Agência digital, social media profissional",preco:"R$ 997/mês",emoji:"🏢"},
+    {id:"p4",nome:"Agent Secret",subtitulo:"Automação total com IA",descricao:"Tudo ilimitado + atendimento de clientes via WhatsApp pela IA, secretária digital, aprovações automáticas, onboarding dedicado e suporte com SLA.",publicoAlvo:"Empresa que quer operação 100% automatizada",preco:"R$ 3.597/mês",emoji:"🤖"},
+    {id:"p5",nome:"Trial Gratuito 7 dias",subtitulo:"Teste sem compromisso",descricao:"Acesso completo ao plano escolhido por 7 dias. Cartão necessário — cobrança só após o período. Cancele quando quiser.",publicoAlvo:"Novos usuários que querem conhecer a plataforma",preco:"Grátis por 7 dias",emoji:"🎁"},
   ],
-  // Públicos
   publicos:[
-    {id:"pb1",nome:"Executiva Exigente",apelido:"Cláudia",idade:"38-52",genero:"fem",descricao:"Alta renda, agenda cheia, não tem tempo a perder. Pesquisa muito antes de agendar. Quer resultado garantido e experiência impecável.",profissao:"Advogada / Executiva / Empresária",renda:"a",dores:"Não tem tempo, medo de resultado artificial, desconfia de clínicas baratas",desejos:"Parecer 10 anos mais jovem sem perder a naturalidade",comportamentoOnline:"Segue perfis de antes/depois, lê avaliações no Google, salva posts de resultados",plataformasFavoritas:"Instagram,LinkedIn",comoChegar:"Conteúdo educativo + depoimentos reais + antes/depois com legenda técnica",ctaPref:"whatsapp"},
-    {id:"pb2",nome:"Mãe que quer se cuidar",apelido:"Fernanda",idade:"32-44",genero:"fem",descricao:"Mãe de 1-2 filhos, prioriza a família, mas quer se sentir bem na própria pele. Culpa por gastar em si mesma. Precisa de empoderamento.",profissao:"Professora / Funcionária pública / Autônoma",renda:"b",dores:"Sente que não cuida de si, autoestima baixa, verba limitada",desejos:"Se olhar no espelho e gostar do que vê",comportamentoOnline:"Muito ativa em grupos de mães, salva dicas de beleza, segue influencers de bem-estar",plataformasFavoritas:"Instagram,WhatsApp",comoChegar:"Posts emocionais de autoestima + preços acessíveis do pacote entrada + parcelamento",ctaPref:"whatsapp"},
-    {id:"pb3",nome:"Noiva / Formanda",apelido:"Isabela",idade:"22-32",genero:"fem",descricao:"Tem evento importante chegando. Altamente motivada, comparando preços, buscando o melhor resultado para o grande dia.",profissao:"Estudante / Profissional liberal júnior",renda:"c",dores:"Medo de não ficar pronta a tempo, orçamento apertado, insegurança sobre procedimentos",desejos:"Estar impecável no dia mais importante da vida",comportamentoOnline:"Pesquisa muito no TikTok e Instagram, salva tudo, pergunta nos stories",plataformasFavoritas:"Instagram,TikTok,WhatsApp",comoChegar:"Conteúdo de preparação pré-evento + cronograma de sessões + pacotes especiais",ctaPref:"whatsapp"},
+    {id:"pb1",nome:"Social Media Autônoma",apelido:"Carol",idade:"24-35",genero:"fem",descricao:"Atende de 5 a 15 clientes sozinha. Passa horas criando conteúdo manualmente. Quer escalar sem contratar.",profissao:"Social Media Freelancer",renda:"b",dores:"Tempo perdido em tarefas repetitivas, clientes que somem para aprovar conteúdo",desejos:"Dobrar a carteira de clientes sem trabalhar o dobro",comportamentoOnline:"Ativa no Instagram e LinkedIn, consome muito conteúdo de produtividade e marketing",plataformasFavoritas:"Instagram,LinkedIn,WhatsApp",comoChegar:"Mostrar quanto tempo a IA economiza com cases reais e comparativos antes/depois",ctaPref:"site"},
+    {id:"pb2",nome:"Dono de PME",apelido:"Ricardo",idade:"30-50",genero:"ambos",descricao:"Tem um negócio funcionando mas as redes sociais estão abandonadas. Sabe que precisa estar nas redes mas não tem tempo nem equipe.",profissao:"Empresário / Empreendedor",renda:"b",dores:"Não tem tempo para redes, conteúdo sem estratégia",desejos:"Ter presença profissional nas redes sem precisar entender de marketing",comportamentoOnline:"Consome LinkedIn e Instagram, pesquisa soluções para otimizar o negócio",plataformasFavoritas:"Instagram,WhatsApp,LinkedIn",comoChegar:"Mostrar simplicidade — a IA faz a estratégia, você só aprova",ctaPref:"whatsapp"},
+    {id:"pb3",nome:"Dono de Agência",apelido:"Marcos",idade:"28-42",genero:"ambos",descricao:"Gerencia 20+ clientes com equipe pequena. Processos manuais limitam o crescimento. Quer padronizar e escalar com white-label.",profissao:"Diretor de Agência Digital",renda:"a",dores:"Processo de aprovação caótico, custo alto de ferramentas separadas",desejos:"Dobrar carteira sem aumentar equipe proporcionalmente",comportamentoOnline:"Muito ativo no LinkedIn, consome cases de automação",plataformasFavoritas:"LinkedIn,Instagram,WhatsApp",comoChegar:"White-label + demonstração de ROI + case de agência que escalou com a plataforma",ctaPref:"site"},
   ],
-  // Agenda (conteúdos)
   agenda:[
-    {id:"ag1",tipo:"Reel",titulo:"Antes e depois — protocolo glow",legenda:"✨ 1 sessão. 1 transformação real.\n\nEssa cliente chegou com pele opaca e saiu com aquele glow que todo mundo nota 🌸\n\nO que fizemos:\n✅ Limpeza profunda\n✅ Microagulhamento\n✅ Hidratação intensiva\n\nResultado imediato, sem downtime.\n\nQuer saber se esse protocolo é para você? DM ou link na bio 💆‍♀️\n\n#glowstudio #microagulhamento #skincare #antesedepois #esteticasp",publicoId:"pb1",plataforma:"Instagram",data:"2025-07-02",hora:"09:00",status:"Ag. aprovação"},
-    {id:"ag2",tipo:"Post Feed",titulo:"3 sinais que sua pele pede socorro",legenda:"Sua pele fala com você. Você está ouvindo? 👇\n\n3 sinais que ela precisa de atenção profissional:\n\n🔴 Opacidade que não some com hidratante\n🔴 Manchas que voltam sempre\n🔴 Poros dilatados e oleosidade excessiva\n\nNão é falta de skincare em casa — é hora de um protocolo profissional.\n\nAgende sua avaliação gratuita 🎁\nLink na bio ou WhatsApp no perfil\n\n#skincare #cuidadoscomapele #glowstudio #dicasdebeleza",publicoId:"pb2",plataforma:"Instagram",data:"2025-07-04",hora:"11:00",status:"Rascunho"},
-    {id:"ag3",tipo:"Story",titulo:"Bastidores do protocolo facial",legenda:"📲 Story sequência:\n1. 'Você sabia que a limpeza de pele certa dura 2x mais?'\n2. [vídeo bastidor da sessão]\n3. 'Resultado dela depois de 45 min aqui com a gente ✨'\n4. 'Próxima vaga: hoje às 14h — responde aqui pra garantir!'",publicoId:"pb2",plataforma:"Instagram",data:"2025-07-03",hora:"14:00",status:"Ag. aprovação"},
-    {id:"ag4",tipo:"TikTok",titulo:"POV: sua pele depois do protocolo glow",legenda:"POV: você entrou duvidando e saiu brilhando 🌟\n\n#glowup #skincaretiktok #esteticasp #transformacao #glowstudio",publicoId:"pb3",plataforma:"TikTok",data:"2025-07-05",hora:"18:00",status:"Rascunho"},
-    {id:"ag5",tipo:"LinkedIn Post",titulo:"Como a estética premium virou negócio de R$2M",legenda:"Em 2019 eu abri uma clínica de estética com R$ 30 mil emprestados e um sonho enorme.\n\nHoje faturamos R$ 2M/ano. O que mudou?\n\n3 decisões que transformaram o negócio:\n→ Parei de competir por preço e comecei a competir por experiência\n→ Investi em tecnologia antes de contratar mais pessoas\n→ Colhi depoimentos de forma sistemática desde o dia 1\n\nA estética é um mercado de R$ 47 bilhões no Brasil. Ainda tem muito espaço.\n\n#empreendedorismo #estetica #negocio #mulherempreendedora",publicoId:"pb1",plataforma:"LinkedIn",data:"2025-07-07",hora:"08:00",status:"Rascunho"},
-    {id:"ag6",tipo:"Carrossel",titulo:"5 perguntas que toda cliente faz antes do botox",legenda:"Slide 1: '5 perguntas que toda mulher tem sobre botox (e as respostas honestas)'\nSlide 2: 'Dói? — Não. Usamos anestésico tópico e agulha finíssima'\nSlide 3: 'Fica artificial? — Depende de quem aplica. Nós fazemos natural'\nSlide 4: 'Quanto dura? — 4 a 6 meses em média'\nSlide 5: 'Qual a idade certa? — Não tem. Tem o momento certo'\nSlide 6: 'CTA: Tire suas dúvidas em avaliação gratuita → link na bio'\n\n#botox #harmonizacaofacial #glowstudio #esteticaavancada",publicoId:"pb1",plataforma:"Instagram",data:"2025-07-09",hora:"09:00",status:"Rascunho"},
+    {id:"ag1",tipo:"Carrossel",titulo:"5 horas que a IA devolve para o social media",legenda:"Você sabia que um social media gasta em média 5h por cliente, por semana, só em tarefas que a IA pode fazer? 👇\n\nSlide 1: 5 horas que você nunca mais vai perder\nSlide 2: Pesquisa de pauta → IA faz em 2 min\nSlide 3: Redação de legendas → IA gera 7 opções por post\nSlide 4: Relatório → dashboard automático\nSlide 5: Aprovação → WhatsApp com 1 clique\nSlide 6: Resultado: você atende 2x mais no mesmo tempo\n\n🚀 Teste grátis 7 dias — link na bio\n\n#socialmedia #inteligenciaartificial #produtividade #socialmidIA",publicoId:"pb1",plataforma:"Instagram",data:"2025-07-02",hora:"09:00",status:"Ag. aprovação"},
+    {id:"ag2",tipo:"Reel",titulo:"De 3h para 12min — criando conteúdo com IA",legenda:"Antes: 3 horas para criar o conteúdo de 1 semana de 1 cliente.\nAgora: 12 minutos. Com a Social Mid-IA. ⚡\n\nA IA lê a marca, cria a estratégia, escreve as legendas e agenda tudo.\n\nVocê só aprova. Ou nem isso — automatiza também 😏\n\nTeste 7 dias grátis → link na bio\n\n#automacaomarketing #socialmidIA #IAmarketing",publicoId:"pb1",plataforma:"Instagram",data:"2025-07-03",hora:"18:00",status:"Ag. aprovação"},
+    {id:"ag3",tipo:"Post Feed",titulo:"O problema real das agências em 2025",legenda:"O problema real das agências em 2025 não é falta de cliente.\n\nÉ falta de processo. 👇\n\n❌ Aprovação por e-mail que some no spam\n❌ Conteúdo criado na última hora\n❌ Relatório montado na mão toda semana\n\nCom a Social Mid-IA:\n✅ Aprovação pelo WhatsApp em 1 toque\n✅ Semana de conteúdo em 1 clique\n✅ Relatório automático com antes e depois\n\n→ Teste grátis no link da bio\n\n#agenciadigital #gestaoderedes #socialmidIA",publicoId:"pb3",plataforma:"Instagram",data:"2025-07-05",hora:"11:00",status:"Rascunho"},
+    {id:"ag4",tipo:"LinkedIn Post",titulo:"Construindo um SaaS de marketing com IA no Brasil",legenda:"Em 2024, eu ainda gerenciava 40 clientes com 12 ferramentas diferentes.\n\nCalendly para reuniões. Notion para pautas. Drive para aprovações. WhatsApp para tudo.\n\nEra caos organizado.\n\nAí eu perguntei: por que não existe uma ferramenta que faz tudo integrado, com IA?\n\nNão existia. Então construí.\n\nA Social Mid-IA nasceu da minha própria dor como social media.\n\n#saas #empreendedorismo #marketingdigital #inteligenciaartificial",publicoId:"pb3",plataforma:"LinkedIn",data:"2025-07-07",hora:"08:00",status:"Rascunho"},
+    {id:"ag5",tipo:"Story",titulo:"Enquete — quanto tempo você perde?",legenda:"Sequência de stories:\n1. Quanto tempo você gasta criando conteúdo por semana?\n2. Enquete: menos de 5h / 5 a 10h / mais de 10h\n3. Se você disse mais de 5h... temos um problema pra resolver juntos\n4. A IA pode fazer isso em minutos. Quer ver? arrasta pra cima",publicoId:"pb1",plataforma:"Instagram",data:"2025-07-04",hora:"14:00",status:"Rascunho"},
+    {id:"ag6",tipo:"TikTok",titulo:"POV: você descobriu a Social Mid-IA",legenda:"POV: você finalmente encontrou uma ferramenta que entende sua marca, cria os posts, manda pro cliente aprovar no WhatsApp e ainda gera o relatório sozinha\n\n#socialmedia #ferramentasdigitais #IAmarketing #socialmidIA",publicoId:"pb1",plataforma:"TikTok",data:"2025-07-06",hora:"19:00",status:"Rascunho"},
   ],
-  // Campanhas de exemplo
   campanhas:[
-    {id:"camp1",nome:"Promoção Julho — Limpeza de Pele",tipo:"whatsapp",assunto:"",mensagem:"Oi [nome]! 🌸 Aqui é a Glow Studio.\n\nJulho chegou com uma surpresa especial pra você:\n\n✨ *Limpeza de Pele Completa + Hidratação* por apenas *R$ 199* (normalmente R$ 280)\n\nVagas limitadas — apenas 20 horários disponíveis nessa condição.\n\nQuer garantir o seu? Me responde aqui 😊",publico:"Clientes VIP",agendada:true,data_envio:"2025-07-01",horario:"10:00",status:"agendada",enviadas:0,abertas:0,cliques:0},
+    {id:"camp1",nome:"Lançamento — Trial 7 dias",tipo:"whatsapp",assunto:"",mensagem:"Oi [nome]! Aqui é a Juliana da Social Mid-IA.\n\nVocê pediu pra saber mais sobre a plataforma — tô animada pra te mostrar!\n\nO que você vai ter acesso no trial de 7 dias:\n✅ IA que analisa sua marca e cria a estratégia\n✅ Geração de 1 semana de posts em 1 clique\n✅ Aprovação de conteúdo pelo WhatsApp\n✅ Campanhas de disparo integradas\n✅ Relatório de crescimento automático\n\nTudo isso por R$0 nos primeiros 7 dias.\n\nQuer começar agora? Me responde QUERO que te mando o link",publico:"Leads em trial",agendada:false,data_envio:"",horario:"10:00",status:"rascunho",enviadas:0,abertas:0,cliques:0},
+    {id:"camp2",nome:"Upgrade Solo → Negócio",tipo:"whatsapp",assunto:"",mensagem:"Oi [nome]! Aqui é a Social Mid-IA.\n\nVocê está no Plano Solo há 30 dias e seus resultados estão crescendo — parabéns!\n\nPlano Negócio — R$497/mês:\n📱 +2 redes sociais (LinkedIn e TikTok)\n📊 3x mais scanners por mês\n💬 Painel de respostas das redes\n📢 Campanhas de WhatsApp ilimitadas\n\nOu seja: você dobra a presença digital por menos de R$10/dia a mais.\n\nQuer saber mais?",publico:"Clientes ativos",agendada:false,data_envio:"",horario:"11:00",status:"rascunho",enviadas:0,abertas:0,cliques:0},
   ],
   cofre:[
-    {s:"Google Account",e:"glowstudio@gmail.com",p:"",n:"Conta principal da clínica"},
-    {s:"Instagram",e:"glowstudio.sp",p:"",n:"Gerenciado pelo Meta Business Suite"},
-    {s:"Facebook",e:"contato@glowstudio.com.br",p:"",n:"Página vinculada ao IG"},
-    {s:"TikTok",e:"@glowstudio.sp",p:"",n:""},
-    {s:"ManyChat",e:"",p:"",n:"Integração com IG DM"},
-    {s:"Canva",e:"design@glowstudio.com.br",p:"",n:"Conta Pro — Templates prontos"},
-    {s:"WhatsApp Business",e:"+5511998765432",p:"",n:"Número principal"},
-    {s:"Hospedagem",e:"",p:"",n:"glowstudio.com.br — vence em jan/2026"},
+    {s:"Google Account",e:"contato@socialmid.com.br",p:"",n:"Conta principal — GSuite"},
+    {s:"Instagram",e:"@socialmid.ia",p:"",n:"Conta criada para a plataforma"},
+    {s:"Facebook",e:"contato@socialmid.com.br",p:"",n:"Página vinculada ao IG"},
+    {s:"TikTok",e:"@socialmid.ia",p:"",n:""},
+    {s:"ManyChat",e:"",p:"",n:"Integração futura com DMs"},
+    {s:"Canva",e:"design@socialmid.com.br",p:"",n:"Templates da marca"},
+    {s:"WhatsApp Business",e:"+5511999990000",p:"",n:"Número de suporte e marketing"},
+    {s:"Hospedagem",e:"",p:"",n:"Vercel — sociamind.vercel.app"},
   ],
-  perfilConteudo:[],ordens:[],
-  msgRegras:[],semanaGerada:null,scannerManual:"Bio Instagram:\n✨ Clínica de Estética Avançada em SP\n💆‍♀️ Harmonização Facial | Skincare | Tratamentos Corporais\n📍 Consolação — SP | Segunda a Sábado\n📲 Agende pelo WhatsApp no link da bio\n🏆 Melhor Clínica Estética SP 2023",
+  perfilConteudo:[],ordens:[],msgRegras:[],semanaGerada:null,
 };
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const DEFAULT_COMPANIES = [
-  { id:DEMO_ID, name:"Glow Studio", niche:"Estética & Beleza Premium", color:"#C8956C", emoji:"✨", demo:true },
+  { id:DEMO_ID, name:"Social Mid-IA", niche:"SaaS · Gestão de Redes com IA", color:"#FF4566", emoji:"🤖", demo:true },
   { id:"dasg",    name:"Das G",                  niche:"Lifestyle / Entretenimento", color:"#FF6B35", emoji:"🔥" },
   { id:"chacara", name:"Chácara Recanto Sereno",  niche:"Eventos / Natureza",         color:"#22C55E", emoji:"🌿" },
   { id:"trato",   name:"Trato Terraplanagem",     niche:"Construção / Serviços",      color:"#D97706", emoji:"🏗️" },
@@ -513,7 +503,7 @@ export default function App({ session, onSignOut }) {
       {/* Banner demo */}
       {co?.id===DEMO_ID&&<div style={{background:`linear-gradient(90deg,#C8956C18,#8B5E3C18)`,borderBottom:`1px solid #C8956C35`,padding:"7px 22px",display:"flex",alignItems:"center",gap:10,fontSize:12}}>
         <span style={{fontWeight:800,color:"#C8956C",letterSpacing:1}}>✦ DEMO</span>
-        <span style={{color:"#C8956C99"}}>Ambiente de demonstração — Glow Studio. Explore todas as funcionalidades livremente. Alterações não são salvas.</span>
+        <span style={{color:"#FF456699"}}>Ambiente de demonstração — Social Mid-IA. Explore todas as funcionalidades livremente. Alterações não são salvas.</span>
         <span style={{marginLeft:"auto",background:"#C8956C20",color:"#C8956C",border:"1px solid #C8956C40",borderRadius:6,padding:"2px 10px",fontWeight:700,fontSize:11}}>Modo simulação</span>
       </div>}
 
