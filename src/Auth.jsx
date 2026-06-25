@@ -168,8 +168,8 @@ export default function Auth({ onAuth }) {
             Scanner estratégico, criação de conteúdo, aprovação via WhatsApp, agendamento e campanhas — tudo em um SaaS movido por inteligência artificial.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <button onClick={() => setView("signup")} style={{ background: G.primary, color: "#fff", border: "none", padding: "14px 32px", borderRadius: 12, cursor: "pointer", fontSize: 15, fontWeight: 700, boxShadow: `0 6px 30px ${T.primary}50` }}>
-              ✨ Começar grátis — 7 dias Pro
+            <button onClick={() => { document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" }); }} style={{ background: G.primary, color: "#fff", border: "none", padding: "14px 32px", borderRadius: 12, cursor: "pointer", fontSize: 15, fontWeight: 700, boxShadow: `0 6px 30px ${T.primary}50` }}>
+              ✨ Ver planos — 7 dias grátis
             </button>
             <button onClick={() => { document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" }); }} style={{ background: C.surf, color: C.text, border: `1px solid ${C.border}`, padding: "14px 28px", borderRadius: 12, cursor: "pointer", fontSize: 15, fontWeight: 600 }}>
               Ver planos
