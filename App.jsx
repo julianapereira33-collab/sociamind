@@ -8,7 +8,8 @@ import {
   CheckCircle, Clock, AlertCircle, XCircle, Send,
   Image, Megaphone, Settings, Eye, EyeOff, Trash2,
   Edit3, Star, TrendingUp, Globe, MessageSquare, Shield,
-  Linkedin, Mail, Radio, Check, X, RefreshCw, ChevronDown, ChevronUp, Upload, LogIn
+  Mail, Radio, Check, X, RefreshCw, ChevronDown, ChevronUp, Upload, LogIn,
+  ClipboardCheck, BellRing, LayoutDashboard, Bot, Crown, Activity, Linkedin
 } from "lucide-react";
 // inp is defined inside App() as a useMemo
 const FONT_URL = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Bebas+Neue&family=Anton&family=Abril+Fatface&family=Oswald:wght@600&family=Playfair+Display:ital,wght@0,700;1,400&family=Merriweather:wght@700&family=Montserrat:wght@700&family=Poppins:wght@400;600;700&family=Raleway:wght@700&family=Josefin+Sans:wght@700&family=Nunito:wght@800&family=DM+Sans:wght@700&family=Dancing+Script:wght@700&family=Pacifico&family=Lobster&family=Sacramento&family=Cormorant+Garamond:wght@700&family=Libre+Baskerville:wght@700&display=swap";
@@ -117,18 +118,18 @@ const EMPTY_DATA = {
   ],
 };
 const TABS = [
-  {id:"gerar",      Icon:Sparkles,      label:"Gerar"},
-  {id:"scanner",    Icon:ScanLine,      label:"Scanner"},
-  {id:"resultados", Icon:BarChart2,     label:"Resultados"},
-  {id:"conteudo",   Icon:FileText,      label:"Conteúdo"},
-  {id:"identidade", Icon:Palette,       label:"Identidade"},
-  {id:"produtos",   Icon:Package,       label:"Produtos"},
-  {id:"publicos",   Icon:Users,         label:"Públicos"},
-  {id:"redes",      Icon:Smartphone,    label:"Redes"},
-  {id:"mensagens",  Icon:MessageSquare, label:"Mensagens"},
-  {id:"campanhas",  Icon:Megaphone,     label:"Campanhas"},
-  {id:"integracoes",Icon:Plug,          label:"Integrações"},
-  {id:"cofre",      Icon:Lock,          label:"Cofre"},
+  {id:"resultados", Icon:LayoutDashboard, label:"Relatório"},
+  {id:"scanner",    Icon:ScanLine,        label:"Scanner"},
+  {id:"identidade", Icon:Palette,         label:"Identidade"},
+  {id:"produtos",   Icon:Package,         label:"Produtos"},
+  {id:"publicos",   Icon:Users,           label:"Públicos"},
+  {id:"redes",      Icon:Smartphone,      label:"Redes"},
+  {id:"conteudo",   Icon:FileText,        label:"Conteúdos"},
+  {id:"campanhas",  Icon:Megaphone,       label:"Campanha"},
+  {id:"aprovacoes", Icon:ClipboardCheck,  label:"Aprovações"},
+  {id:"gerar",      Icon:Sparkles,        label:"Gerar"},
+  {id:"integracoes",Icon:Plug,            label:"Integrações"},
+  {id:"cofre",      Icon:Lock,            label:"Cofre"},
 ];
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
@@ -357,40 +358,54 @@ export default function App({ session, onSignOut }) {
     <div style={{minHeight:"100vh",background:C.bg,color:C.text,fontFamily:"'Poppins',system-ui,sans-serif",display:"flex",flexDirection:"column"}}>
       {toast&&<div style={{position:"fixed",top:14,right:14,background:G.primary,color:"#fff",padding:"10px 18px",borderRadius:10,fontSize:13,fontWeight:600,zIndex:9999,boxShadow:`0 4px 24px ${T.primary}50`,fontFamily:"'Inter',sans-serif"}}>{toast.msg}</div>}
 
-      {/* Topbar */}
-      <div style={{background:T.surf,borderBottom:`1px solid ${T.border}`,padding:"10px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
+      {/* Topbar white-label */}
+      <div style={{background:T.surf,borderBottom:`1px solid ${T.border}`,padding:"0 22px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0,position:"relative",overflow:"hidden"}}>
+        {/* Barra de cor da marca no topo */}
+        <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${co.color},${co.color}80,transparent)`}} />
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0"}}>
           <button onClick={()=>setView("home")} style={{background:"none",border:`1px solid ${T.border2}`,color:T.textMuted,padding:"6px 12px",borderRadius:8,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",gap:5,fontFamily:"'Inter',sans-serif"}}>
             <ChevronLeft size={14}/> Hub
           </button>
           <div style={{width:1,height:22,background:T.border}} />
-          <div style={{width:34,height:34,borderRadius:9,background:co.color+"18",border:`1.5px solid ${co.color}40`,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",fontSize:16}}>
+          <div style={{width:38,height:38,borderRadius:10,background:co.color+"18",border:`2px solid ${co.color}50`,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",fontSize:18,boxShadow:`0 0 12px ${co.color}30`}}>
             {form.logob64?<img src={form.logob64} style={{width:"100%",height:"100%",objectFit:"cover"}} alt="" />:co.emoji}
           </div>
           <div>
-            <div style={{fontSize:14,fontWeight:700,color:T.text,display:"flex",alignItems:"center",gap:6,fontFamily:"'Inter',sans-serif"}}>{form.nomeFantasia||co.name}<span style={{fontSize:10,background:co.color+"18",color:co.color,padding:"2px 8px",borderRadius:20,fontWeight:600}}>{co.niche}</span></div>
+            <div style={{fontSize:14,fontWeight:700,color:T.text,display:"flex",alignItems:"center",gap:6,fontFamily:"'Inter',sans-serif"}}>
+              {form.nomeFantasia||co.name}
+              <span style={{fontSize:10,background:co.color+"18",color:co.color,padding:"2px 8px",borderRadius:20,fontWeight:600,border:`1px solid ${co.color}30`}}>{co.niche}</span>
+            </div>
             {form.slogan&&<div style={{fontSize:10,color:T.textMuted,fontStyle:"italic"}}>"{form.slogan}"</div>}
           </div>
         </div>
-        <button onClick={save} disabled={saving} style={{background:`linear-gradient(135deg,${T.accent},${T.primaryL})`,color:"#fff",border:"none",padding:"8px 22px",borderRadius:9,cursor:"pointer",fontWeight:600,fontSize:13,opacity:saving?.7:1,boxShadow:`0 4px 18px ${T.primary}40`,display:"flex",alignItems:"center",gap:7,fontFamily:"'Inter',sans-serif"}}>
-          <Save size={14}/> {saving?"Salvando…":"Salvar"}
-        </button>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          {/* Badge aprovações pendentes */}
+          {(()=>{const pend=(form.agenda||[]).filter(a=>["Rascunho","Ag. aprovação","Alteração"].includes(a.status)).length;return pend>0&&<button onClick={()=>setTab("aprovacoes")} style={{background:"#FF4566"+"18",border:"1px solid #FF456640",color:"#FF4566",padding:"6px 12px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:5}}><BellRing size={13}/>{pend} pendente{pend>1?"s":""}</button>;})()}
+          <button onClick={save} disabled={saving} style={{background:`linear-gradient(135deg,${co.color},${co.color}CC)`,color:"#fff",border:"none",padding:"8px 22px",borderRadius:9,cursor:"pointer",fontWeight:600,fontSize:13,opacity:saving?.7:1,boxShadow:`0 4px 18px ${co.color}40`,display:"flex",alignItems:"center",gap:7,fontFamily:"'Inter',sans-serif"}}>
+            <Save size={14}/> {saving?"Salvando…":"Salvar"}
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
       <div style={{background:T.surf,borderBottom:`1px solid ${T.border}`,padding:"0 16px",display:"flex",overflowX:"auto",flexShrink:0,gap:1,scrollbarWidth:"none"}}>
         {TABS.map(t=>{
           const active=t.id===tab;
+          const pend=t.id==="aprovacoes"?(form.agenda||[]).filter(a=>["Rascunho","Ag. aprovação","Alteração"].includes(a.status)).length:0;
           return <button key={t.id} onClick={()=>setTab(t.id)} style={{
             background:"none",border:"none",
-            borderBottom:`2px solid ${active?T.primaryL:"transparent"}`,
+            borderBottom:`2px solid ${active?co.color:"transparent"}`,
             padding:"11px 14px",cursor:"pointer",whiteSpace:"nowrap",
-            color:active?T.primaryXL:T.textMuted,
+            color:active?co.color:T.textMuted,
             fontWeight:active?600:400,fontSize:12,
             display:"flex",alignItems:"center",gap:6,
             transition:"color .15s",
             fontFamily:"'Inter',system-ui,sans-serif",
-          }}><t.Icon size={14} strokeWidth={active?2.5:1.8}/>{t.label}</button>;
+            position:"relative",
+          }}>
+            <t.Icon size={14} strokeWidth={active?2.5:1.8}/>{t.label}
+            {pend>0&&<span style={{background:"#FF4566",color:"#fff",borderRadius:"50%",width:16,height:16,fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",position:"absolute",top:6,right:2}}>{pend}</span>}
+          </button>;
         })}
       </div>
 
@@ -408,6 +423,7 @@ export default function App({ session, onSignOut }) {
           {tab==="integracoes" &&<TabIntegracoes />}
           {tab==="mensagens"   &&<TabMensagens />}
           {tab==="campanhas"   &&<TabCampanhas />}
+          {tab==="aprovacoes"  &&<TabAprovacoes />}
           {tab==="cofre"       &&<TabCofre />}
         </div>
       </div>
@@ -2169,15 +2185,15 @@ RETORNE APENAS JSON válido, sem texto antes ou depois:
     const PERIODOS=[{id:"7d",label:"7 dias"},{id:"30d",label:"30 dias"},{id:"90d",label:"90 dias"},{id:"12m",label:"12 meses"}];
 
     const CAMPOS_MET={
-      instagram:["seguidores","alcance","impressoes","engajamento","curtidas","comentarios","compartilhamentos","salvamentos","visitas_perfil","cliques_bio"],
-      facebook:["seguidores","alcance","impressoes","engajamento","curtidas","comentarios","compartilhamentos","cliques_link"],
-      linkedin:["seguidores","alcance","impressoes","engajamento","curtidas","comentarios","cliques"],
-      tiktok:["seguidores","visualizacoes","curtidas","comentarios","compartilhamentos","alcance"],
+      instagram:["seguidores_anterior","seguidores","alcance","impressoes","engajamento","curtidas","comentarios","compartilhamentos","salvamentos","visitas_perfil","cliques_bio"],
+      facebook:["seguidores_anterior","seguidores","alcance","impressoes","engajamento","curtidas","comentarios","compartilhamentos","cliques_link"],
+      linkedin:["seguidores_anterior","seguidores","alcance","impressoes","engajamento","curtidas","comentarios","cliques"],
+      tiktok:["seguidores_anterior","seguidores","visualizacoes","curtidas","comentarios","compartilhamentos","alcance"],
       whatsapp:["contatos","mensagens_enviadas","mensagens_recebidas","taxa_abertura","conversoes"],
     };
 
     const campos=CAMPOS_MET[plat]||[];
-    const labelCampo=(k)=>({seguidores:"Seguidores",alcance:"Alcance",impressoes:"Impressões",engajamento:"Engajamento %",curtidas:"Curtidas",comentarios:"Comentários",compartilhamentos:"Compartilhamentos",salvamentos:"Salvamentos",visitas_perfil:"Visitas ao Perfil",cliques_bio:"Cliques na Bio",cliques_link:"Cliques no Link",cliques:"Cliques",visualizacoes:"Visualizações",conversoes:"Conversões",taxa_abertura:"Taxa de Abertura %",contatos:"Contatos",mensagens_enviadas:"Mensagens Enviadas",mensagens_recebidas:"Recebidas"}[k]||k);
+    const labelCampo=(k)=>({seguidores_anterior:"Seguidores (antes)",seguidores:"Seguidores (atual)",alcance:"Alcance",impressoes:"Impressões",engajamento:"Engajamento %",curtidas:"Curtidas",comentarios:"Comentários",compartilhamentos:"Compartilhamentos",salvamentos:"Salvamentos",visitas_perfil:"Visitas ao Perfil",cliques_bio:"Cliques na Bio",cliques_link:"Cliques no Link",cliques:"Cliques",visualizacoes:"Visualizações",conversoes:"Conversões",taxa_abertura:"Taxa de Abertura %",contatos:"Contatos",mensagens_enviadas:"Mensagens Enviadas",mensagens_recebidas:"Recebidas"}[k]||k);
     const icone=(k)=>({seguidores:"👥",alcance:"📡",impressoes:"👁",engajamento:"💥",curtidas:"❤️",comentarios:"💬",compartilhamentos:"🔁",salvamentos:"🔖",visitas_perfil:"🏠",cliques_bio:"🔗",cliques_link:"🔗",cliques:"🖱",visualizacoes:"▶️",conversoes:"🎯",taxa_abertura:"📬",contatos:"📒",mensagens_enviadas:"📤",mensagens_recebidas:"📥"}[k]||"📊");
 
     return <>
@@ -2215,6 +2231,48 @@ RETORNE APENAS JSON válido, sem texto antes ou depois:
           </div>
         ))}
       </div>
+
+      {/* Gráfico de Crescimento — Antes e Depois */}
+      {(()=>{
+        const m=form.metricas||{};
+        const plats=["instagram","facebook","linkedin","tiktok"];
+        const hasData=plats.some(p=>m[p]?.seguidores||m[p]?.seguidores_anterior);
+        if(!hasData) return null;
+        return <div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px",marginBottom:14}}>
+          <div style={{fontSize:14,fontWeight:700,color:T.text,marginBottom:16,display:"flex",alignItems:"center",gap:8}}>
+            <Activity size={16} color={co.color}/>Crescimento — Antes & Depois da Metamorfose
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10}}>
+            {plats.map(p=>{
+              const d=m[p]||{};
+              const ant=Number(d.seguidores_anterior||0);
+              const atual=Number(d.seguidores||0);
+              if(!ant&&!atual) return null;
+              const diff=atual-ant;
+              const pct=ant>0?Math.round((diff/ant)*100):0;
+              const icons={instagram:"🟣",facebook:"🔵",linkedin:"🔷",tiktok:"⚫"};
+              return <div key={p} style={{background:T.surf3,border:`1px solid ${T.border}`,borderRadius:12,padding:"14px",textAlign:"center"}}>
+                <div style={{fontSize:20,marginBottom:4}}>{icons[p]}</div>
+                <div style={{fontSize:11,fontWeight:700,color:C.muted,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>{p}</div>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+                  <div><div style={{fontSize:10,color:C.muted}}>Antes</div><div style={{fontSize:16,fontWeight:700,color:C.muted}}>{ant.toLocaleString()}</div></div>
+                  <div style={{fontSize:20,color:diff>=0?"#22C55E":"#EF4444",alignSelf:"center"}}>{diff>=0?"↗":"↘"}</div>
+                  <div><div style={{fontSize:10,color:C.muted}}>Atual</div><div style={{fontSize:16,fontWeight:700,color:co.color}}>{atual.toLocaleString()}</div></div>
+                </div>
+                <div style={{height:4,background:T.border,borderRadius:2,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${Math.min(100,ant>0?(atual/Math.max(ant,atual))*100:100)}%`,background:`linear-gradient(90deg,${co.color},${co.color}80)`,borderRadius:2,transition:"width .8s"}}/>
+                </div>
+                <div style={{fontSize:12,fontWeight:700,color:diff>=0?"#22C55E":"#EF4444",marginTop:6}}>
+                  {diff>=0?"+":""}{diff.toLocaleString()} ({pct>=0?"+":""}{pct}%)
+                </div>
+              </div>;
+            }).filter(Boolean)}
+          </div>
+          <div style={{fontSize:11,color:C.muted,marginTop:12,display:"flex",gap:4,alignItems:"center"}}>
+            <AlertCircle size={11}/>Para ativar o gráfico, preencha "Seguidores Anterior" nas métricas de cada plataforma abaixo.
+          </div>
+        </div>;
+      })()}
 
       {/* Métricas por plataforma */}
       <div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px",marginBottom:14}}>
@@ -2680,6 +2738,179 @@ Retorne APENAS o texto do post LinkedIn pronto para publicar. Máximo 1.300 cara
   }
 
   // ─── COFRE ────────────────────────────────────────────────────────────────
+  // ─── APROVAÇÕES ───────────────────────────────────────────────────────────────
+  function TabAprovacoes(){
+    const agenda=form.agenda||[];
+    const [autoAprov,setAutoAprov]=useState(form.autoAprovacao||false);
+    const [filtro,setFiltro]=useState("pendentes"); // pendentes | aprovados | todos
+    const [expandedCards,setExpandedCards]=useState({});
+    const toggleExp=(id)=>setExpandedCards(p=>({...p,[id]:!p[id]}));
+
+    function toggleAutoAprov(){
+      const novo=!autoAprov;
+      setAutoAprov(novo);
+      upd("autoAprovacao",novo);
+      flash(novo?"✅ Modo automático ativado — conteúdos serão aprovados automaticamente":"⏸ Aprovação manual reativada","teal");
+    }
+
+    function aprovar(item){
+      const upd2=agenda.map(a=>a.id===item.id?{...a,status:"Aprovado",aprovadoEm:new Date().toISOString()}:a);
+      upd("agenda",upd2);
+      flash("✅ Conteúdo aprovado!","teal");
+      // Notificação WhatsApp
+      enviarNotifWhats(`✅ Conteúdo aprovado: *${item.titulo||item.tipo}* agendado para ${item.data||"breve"}`);
+    }
+
+    function reprovar(item){
+      const upd2=agenda.map(a=>a.id===item.id?{...a,status:"Alteração"}:a);
+      upd("agenda",upd2);
+      flash("🔄 Solicitada alteração","amber");
+    }
+
+    function aprovarTodos(){
+      const upd2=agenda.map(a=>["Rascunho","Ag. aprovação"].includes(a.status)?{...a,status:"Aprovado",aprovadoEm:new Date().toISOString()}:a);
+      upd("agenda",upd2);
+      flash("✅ Todos aprovados!","teal");
+    }
+
+    async function enviarNotifWhats(msg){
+      try{
+        const instId=form.zapiInstanceId||"3F41BD43559D418792AB0E6CB8567DC3";
+        const token=form.zapiToken||"E46271A589D038023754FAAE";
+        const tel=form.telefoneResponsavel;
+        if(!tel) return;
+        await fetch(`https://api.z-api.io/instances/${instId}/token/${token}/send-text`,{
+          method:"POST",headers:{"Content-Type":"application/json","Client-Token":form.zapiClientToken||""},
+          body:JSON.stringify({phone:tel,message:msg})
+        });
+      }catch(e){}
+    }
+
+    const pendentes=agenda.filter(a=>["Rascunho","Ag. aprovação","Alteração"].includes(a.status));
+    const aprovados=agenda.filter(a=>["Aprovado","Agendado","Publicado"].includes(a.status));
+    const lista=filtro==="pendentes"?pendentes:filtro==="aprovados"?aprovados:agenda;
+
+    return <>
+      {/* Header */}
+      <div style={{marginBottom:16,padding:"18px 20px",background:`${co.color}10`,border:`1px solid ${co.color}25`,borderRadius:16,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:44,height:44,borderRadius:11,background:`linear-gradient(135deg,${co.color},${co.color}99)`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <ClipboardCheck size={20} color="#fff"/>
+          </div>
+          <div>
+            <div style={{fontSize:17,fontWeight:700,color:T.text}}>Central de Aprovações</div>
+            <div style={{fontSize:12,color:C.muted}}>{pendentes.length} pendente{pendentes.length!==1?"s":""} · {aprovados.length} aprovado{aprovados.length!==1?"s":""}</div>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+          {pendentes.length>0&&!autoAprov&&<button onClick={aprovarTodos} style={{background:`${co.color}15`,color:co.color,border:`1px solid ${co.color}30`,padding:"7px 16px",borderRadius:9,cursor:"pointer",fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:6}}><CheckCircle size={13}/>Aprovar todos</button>}
+          {/* Toggle modo automático */}
+          <div style={{display:"flex",alignItems:"center",gap:8,background:T.surf3,border:`1px solid ${T.border2}`,padding:"7px 14px",borderRadius:10}}>
+            <Bot size={14} color={autoAprov?co.color:T.textMuted}/>
+            <span style={{fontSize:12,color:autoAprov?co.color:T.textMuted,fontWeight:600}}>Auto-aprovação</span>
+            <div onClick={toggleAutoAprov} style={{width:36,height:20,borderRadius:10,background:autoAprov?co.color:T.border2,cursor:"pointer",position:"relative",transition:"background .2s"}}>
+              <div style={{position:"absolute",top:2,left:autoAprov?18:2,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 4px #0004"}}/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Info auto-aprovação */}
+      {autoAprov&&<div style={{background:"#22C55E18",border:"1px solid #22C55E30",borderRadius:12,padding:"12px 16px",marginBottom:16,display:"flex",gap:8,alignItems:"center"}}>
+        <Bot size={16} color="#22C55E"/>
+        <span style={{fontSize:13,color:"#22C55E",fontWeight:600}}>Modo automático ativo</span>
+        <span style={{fontSize:12,color:C.muted}}>— novos conteúdos são aprovados automaticamente sem revisão manual</span>
+      </div>}
+
+      {/* Filtros */}
+      <div style={{display:"flex",gap:6,marginBottom:16}}>
+        {[{id:"pendentes",label:`Pendentes (${pendentes.length})`},{id:"aprovados",label:`Aprovados (${aprovados.length})`},{id:"todos",label:`Todos (${agenda.length})`}].map(f=>
+          <button key={f.id} onClick={()=>setFiltro(f.id)} style={{padding:"5px 14px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:filtro===f.id?700:400,border:`1px solid ${filtro===f.id?co.color:T.border2}`,background:filtro===f.id?`${co.color}18`:T.surf3,color:filtro===f.id?co.color:C.muted}}>{f.label}</button>
+        )}
+      </div>
+
+      {/* Lista */}
+      {lista.length===0&&<div style={{textAlign:"center",padding:"48px 0",color:C.muted}}>
+        <ClipboardCheck size={40} strokeWidth={1} style={{marginBottom:12,color:T.border2}}/>
+        <div style={{fontSize:15,fontWeight:600,color:C.muted}}>{filtro==="pendentes"?"Nenhuma aprovação pendente 🎉":"Nenhum conteúdo aqui"}</div>
+      </div>}
+
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        {lista.map(item=>{
+          const expanded=expandedCards[item.id];
+          const isPend=["Rascunho","Ag. aprovação","Alteração"].includes(item.status);
+          const statusCor={Aprovado:"#22C55E","Ag. aprovação":"#F59E0B",Rascunho:"#6B7280",Alteração:"#EF4444",Agendado:"#3B82F6",Publicado:"#8B5CF6"}[item.status]||T.textMuted;
+          return <div key={item.id} style={{background:T.surf,border:`1px solid ${isPend?co.color+"35":T.border}`,borderRadius:14,padding:"16px",transition:"all .15s"}}>
+            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                  <span style={{fontSize:11,fontWeight:700,background:`${statusCor}18`,color:statusCor,padding:"2px 9px",borderRadius:20,border:`1px solid ${statusCor}30`}}>{item.status}</span>
+                  <span style={{fontSize:11,color:C.muted}}>{item.tipo}</span>
+                  {item.data&&<span style={{fontSize:11,color:C.muted}}>📅 {item.data} {item.hora||""}</span>}
+                  {item.plataforma&&<span style={{fontSize:11,color:C.muted}}>📱 {item.plataforma}</span>}
+                </div>
+                {item.titulo&&<div style={{fontSize:14,fontWeight:700,color:T.text,marginBottom:4}}>{item.titulo}</div>}
+                <div style={{fontSize:13,color:C.muted,lineHeight:1.5}}>
+                  {expanded?item.legenda:(item.legenda||"").slice(0,120)}{!expanded&&(item.legenda||"").length>120?"…":""}
+                </div>
+                {(item.legenda||"").length>120&&<button onClick={()=>toggleExp(item.id)} style={{background:"none",border:"none",color:co.color,fontSize:12,cursor:"pointer",padding:"4px 0",fontWeight:600,display:"flex",alignItems:"center",gap:4}}>
+                  {expanded?<><ChevronUp size={13}/>Ver menos</>:<><ChevronDown size={13}/>Ver mais</>}
+                </button>}
+                {item.hashtags&&<div style={{fontSize:11,color:co.color,marginTop:4}}>{item.hashtags}</div>}
+              </div>
+              {isPend&&!autoAprov&&<div style={{display:"flex",gap:6,flexShrink:0}}>
+                <button onClick={()=>reprovar(item)} style={{background:"#EF444418",color:"#EF4444",border:"1px solid #EF444430",padding:"6px 12px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:4}}><X size={12}/>Alterar</button>
+                <button onClick={()=>aprovar(item)} style={{background:`${co.color}18`,color:co.color,border:`1px solid ${co.color}30`,padding:"6px 14px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:4}}><Check size={12}/>Aprovar</button>
+              </div>}
+              {item.status==="Aprovado"&&<span style={{color:"#22C55E",fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:4}}><CheckCircle size={14}/>Aprovado</span>}
+            </div>
+          </div>;
+        })}
+      </div>
+
+      {/* Notificações WhatsApp */}
+      <div style={{marginTop:24,padding:"16px 20px",background:T.surf,border:`1px solid ${T.border}`,borderRadius:14}}>
+        <div style={{fontSize:13,fontWeight:700,color:T.text,marginBottom:12,display:"flex",alignItems:"center",gap:8}}><BellRing size={15} color="#25D366"/>Alertas automáticos via WhatsApp</div>
+        <div style={{marginBottom:12}}>
+          <label style={{fontSize:12,color:C.muted,display:"block",marginBottom:4}}>Telefone do responsável (com DDI)</label>
+          <input value={form.telefoneResponsavel||""} onChange={e=>upd("telefoneResponsavel",e.target.value)} placeholder="5511999999999" style={{...inp,maxWidth:260}} />
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          {[
+            {label:"Aprovação pendente",desc:"Avisa quando há conteúdo para aprovar"},
+            {label:"Sem conteúdo agendado",desc:"Alerta quando agenda está vazia"},
+            {label:"Crescimento comprometido",desc:"Avisa queda de desempenho"},
+            {label:"Resultado positivo",desc:"Comemora metas alcançadas"},
+          ].map((a,i)=><div key={i} style={{background:T.surf3,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 12px"}}>
+            <div style={{fontSize:12,fontWeight:600,color:T.text}}>{a.label}</div>
+            <div style={{fontSize:11,color:C.muted,marginTop:2}}>{a.desc}</div>
+          </div>)}
+        </div>
+        <button onClick={()=>{
+          const pend=(form.agenda||[]).filter(a=>["Rascunho","Ag. aprovação"].includes(a.status)).length;
+          const msg=pend>0
+            ?`📋 *${form.nomeFantasia||co.name}* — você tem ${pend} conteúdo${pend>1?"s":""} aguardando aprovação no SociaMinD!`
+            :`✅ *${form.nomeFantasia||co.name}* — sua agenda está atualizada. Continue assim! 🚀`;
+          enviarNotifWhats(msg);
+          flash("📱 Notificação enviada!","teal");
+        }} style={{marginTop:12,background:"#25D36618",color:"#25D366",border:"1px solid #25D36630",padding:"8px 18px",borderRadius:9,cursor:"pointer",fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
+          <Send size={13}/> Testar notificação agora
+        </button>
+      </div>
+    </>;
+
+    function enviarNotifWhats(msg){
+      const instId=form.zapiInstanceId||"3F41BD43559D418792AB0E6CB8567DC3";
+      const token=form.zapiToken||"E46271A589D038023754FAAE";
+      const tel=form.telefoneResponsavel;
+      if(!tel) return;
+      fetch(`https://api.z-api.io/instances/${instId}/token/${token}/send-text`,{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({phone:tel,message:msg})
+      }).catch(()=>{});
+    }
+  }
+
   function TabCofre(){
     const cofre=form.cofre||EMPTY_DATA.cofre;
     return <>
