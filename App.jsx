@@ -170,8 +170,9 @@ export default function App({ session, onSignOut }) {
   useEffect(() => {
     const lnk = document.createElement("link"); lnk.rel="stylesheet"; lnk.href=FONT_URL; document.head.appendChild(lnk);
     document.body.style.background = T.bg;
-    const session = storage.get("sociamind-session");
-    if(session) { setLoggedIn(true); setView("home"); }
+    const localSession = storage.get("sociamind-session");
+    // Se Supabase autenticou (prop session) ou tem sessão local, entra direto
+    if(session || localSession) { setLoggedIn(true); setView("home"); }
     loadAll();
   }, []);
 
