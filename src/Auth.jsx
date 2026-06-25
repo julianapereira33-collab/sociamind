@@ -16,22 +16,82 @@ const inp = {
 
 const PLANS = [
   {
-    id: "free", name: "Gratuito", price: "R$ 0", period: "/mês", cor: C.muted,
-    features: ["Scanner IA (3x/mês)", "5 posts agendados", "1 rede social", "Geração de conteúdo básica"],
-    limits: "Ideal para testar",
-    cta: "Começar grátis",
-  },
-  {
-    id: "pro", name: "Pro", price: "R$ 97", period: "/mês", cor: T.primaryL, destaque: true,
-    features: ["Scanner IA ilimitado", "Posts ilimitados", "5 redes sociais", "Campanhas WhatsApp", "Aprovação via WhatsApp", "Relatórios avançados"],
-    limits: "Para freelancers e pequenas empresas",
+    id: "solo", name: "Solo", cor: "#10b981",
+    preco: { mensal: "R$ 197", semestral: "R$ 177" },
+    semestralTotal: "R$ 1.064",
+    limits: "Para empreendedores solo",
+    features: [
+      "1 marca / empresa",
+      "3 redes sociais",
+      "3 posts por semana (IA)",
+      "1 scanner por mês",
+      "Estratégia mensal",
+      "Aprovações pelo app",
+      "Alertas WhatsApp",
+      "Relatório básico",
+    ],
     cta: "Começar 7 dias grátis",
   },
   {
-    id: "business", name: "Business", price: "R$ 197", period: "/mês", cor: "#E8890C",
-    features: ["Tudo do Pro", "Redes ilimitadas", "Campanhas ilimitadas", "Multi-usuário (até 10)", "API access", "Suporte prioritário", "White-label"],
-    limits: "Para agências e times",
+    id: "negocio", name: "Negócio", cor: T.primaryL, destaque: true,
+    preco: { mensal: "R$ 497", semestral: "R$ 447" },
+    semestralTotal: "R$ 2.684",
+    limits: "Para negócios em crescimento",
+    features: [
+      "1 marca / empresa",
+      "5 redes (incl. LinkedIn e TikTok)",
+      "7 posts por semana (IA)",
+      "3 scanners por mês / rede",
+      "Estratégia semanal + quinzenal",
+      "Briefing de marca ✓",
+      "Campanhas WhatsApp (c/ limite)",
+      "Aprovação app + WhatsApp",
+      "Painel de respostas nas redes",
+      "Relatório avançado",
+      "2 usuários",
+    ],
     cta: "Começar 7 dias grátis",
+  },
+  {
+    id: "agencia", name: "Agência", cor: "#f59e0b",
+    preco: { mensal: "R$ 997", semestral: "R$ 897" },
+    semestralTotal: "R$ 5.384",
+    limits: "Para agências digitais",
+    features: [
+      "1 cliente (recursos ilimitados)",
+      "Redes sociais ilimitadas",
+      "Posts ilimitados",
+      "5 scanners / mês por rede",
+      "Estratégia semanal/quinzenal/mensal",
+      "Briefing de marca ✓",
+      "Campanhas email + WhatsApp",
+      "Aprovação automática ✓",
+      "Automação de respostas nas redes",
+      "White-label (cores + logo do cliente)",
+      "Relatório executivo com estratégia",
+      "3 usuários · Suporte prioritário",
+    ],
+    cta: "Começar 7 dias grátis",
+  },
+  {
+    id: "agent_secret", name: "Agent Secret", cor: "#8b5cf6",
+    preco: { mensal: "R$ 3.597", semestral: "R$ 3.237" },
+    semestralTotal: "R$ 19.424",
+    limits: "Operação full-auto com agente IA",
+    features: [
+      "1 empresa principal · tudo ilimitado",
+      "Todas as redes sociais",
+      "Posts e scanners ilimitados",
+      "Estratégia automática (IA)",
+      "Agente IA responde clientes no WhatsApp",
+      "Secretaria IA para pedidos urgentes",
+      "Campanhas email + WhatsApp ilimitadas",
+      "Automação completa de respostas",
+      "White-label completo",
+      "Usuários ilimitados",
+      "Onboarding dedicado · SLA garantido",
+    ],
+    cta: "Falar com a equipe",
   },
 ];
 
@@ -44,6 +104,7 @@ export default function Auth({ onAuth }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [msg, setMsg] = useState("");
+  const [billing, setBilling] = useState("mensal");
 
   async function signIn(e) {
     e.preventDefault();
@@ -114,7 +175,7 @@ export default function Auth({ onAuth }) {
               Ver planos
             </button>
           </div>
-          <div style={{ marginTop: 24, fontSize: 12, color: C.muted }}>7 dias grátis • Sem cartão de crédito • Cancele quando quiser</div>
+          <div style={{ marginTop: 24, fontSize: 12, color: C.muted }}>7 dias grátis com cartão • Cancele antes sem cobrança • Planos a partir de R$ 197/mês</div>
         </div>
       </div>
 
@@ -144,26 +205,37 @@ export default function Auth({ onAuth }) {
 
       {/* PRICING */}
       <div id="pricing" style={{ background: C.surf, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}`, padding: "64px 24px" }}>
-        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
+        <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 40 }}>
             <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 3, color: T.primaryL, textTransform: "uppercase", marginBottom: 10 }}>Planos e Preços</div>
             <h2 style={{ fontSize: 32, fontWeight: 800, color: C.text, marginBottom: 8 }}>Simples, transparente e sem surpresas</h2>
-            <div style={{ fontSize: 14, color: C.muted }}>Todos os planos incluem 7 dias de trial gratuito no Pro</div>
+            <div style={{ fontSize: 14, color: C.muted, marginBottom: 28 }}>Todos os planos incluem 7 dias de trial gratuito — cartão necessário para garantir o acesso</div>
+            {/* Toggle mensal/semestral */}
+            <div style={{ display: "inline-flex", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 30, padding: 4, gap: 4 }}>
+              {["mensal", "semestral"].map(b => (
+                <button key={b} onClick={() => setBilling(b)} style={{ padding: "8px 22px", borderRadius: 26, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 13, background: billing === b ? G.primary : "transparent", color: billing === b ? "#fff" : C.muted, transition: "all .2s" }}>
+                  {b === "mensal" ? "Mensal" : "Semestral"}{b === "semestral" && <span style={{ fontSize: 10, marginLeft: 6, background: "#10b98120", color: "#10b981", padding: "2px 6px", borderRadius: 10, fontWeight: 800 }}>-10%</span>}
+                </button>
+              ))}
+            </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
             {PLANS.map(p => (
-              <div key={p.id} style={{ background: p.destaque ? `${T.primary}10` : C.bg, border: `2px solid ${p.destaque ? T.primary : C.border}`, borderRadius: 20, padding: "28px 24px", position: "relative" }}>
-                {p.destaque && <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: G.primary, color: "#fff", fontSize: 11, fontWeight: 800, padding: "4px 16px", borderRadius: 20, whiteSpace: "nowrap" }}>MAIS POPULAR</div>}
-                <div style={{ fontSize: 13, fontWeight: 800, color: p.cor, marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>{p.name}</div>
-                <div style={{ display: "flex", alignItems: "flex-end", gap: 4, marginBottom: 4 }}>
-                  <span style={{ fontSize: 36, fontWeight: 800, color: C.text }}>{p.price}</span>
-                  <span style={{ fontSize: 13, color: C.muted, marginBottom: 6 }}>{p.period}</span>
+              <div key={p.id} style={{ background: p.destaque ? `${T.primary}08` : C.bg, border: `2px solid ${p.destaque ? T.primary : C.border}`, borderRadius: 20, padding: "28px 22px", position: "relative", display: "flex", flexDirection: "column" }}>
+                {p.destaque && <div style={{ position: "absolute", top: -13, left: "50%", transform: "translateX(-50%)", background: G.primary, color: "#fff", fontSize: 11, fontWeight: 800, padding: "4px 18px", borderRadius: 20, whiteSpace: "nowrap" }}>✦ MAIS POPULAR</div>}
+                <div style={{ fontSize: 12, fontWeight: 800, color: p.cor, marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>{p.name}</div>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 4, marginBottom: 2 }}>
+                  <span style={{ fontSize: 34, fontWeight: 800, color: C.text }}>{p.preco[billing]}</span>
+                  <span style={{ fontSize: 12, color: C.muted, marginBottom: 6 }}>/mês</span>
                 </div>
-                <div style={{ fontSize: 12, color: C.muted, marginBottom: 20 }}>{p.limits}</div>
-                <ul style={{ listStyle: "none", padding: 0, margin: "0 0 24px", display: "flex", flexDirection: "column", gap: 8 }}>
+                {billing === "semestral" && (
+                  <div style={{ fontSize: 11, color: "#10b981", fontWeight: 700, marginBottom: 4 }}>Total: {p.semestralTotal} · cobrado semestralmente</div>
+                )}
+                <div style={{ fontSize: 12, color: C.muted, marginBottom: 18 }}>{p.limits}</div>
+                <ul style={{ listStyle: "none", padding: 0, margin: "0 0 24px", display: "flex", flexDirection: "column", gap: 7, flex: 1 }}>
                   {p.features.map(f => (
-                    <li key={f} style={{ fontSize: 13, color: C.text, display: "flex", gap: 8, alignItems: "flex-start" }}>
-                      <span style={{ color: p.cor, fontWeight: 700, flexShrink: 0 }}>✓</span> {f}
+                    <li key={f} style={{ fontSize: 12, color: C.text, display: "flex", gap: 7, alignItems: "flex-start", lineHeight: 1.5 }}>
+                      <span style={{ color: p.cor, fontWeight: 700, flexShrink: 0, marginTop: 1 }}>✓</span> {f}
                     </li>
                   ))}
                 </ul>
@@ -172,6 +244,9 @@ export default function Auth({ onAuth }) {
                 </button>
               </div>
             ))}
+          </div>
+          <div style={{ textAlign: "center", marginTop: 24, fontSize: 12, color: C.muted }}>
+            💳 Cartão necessário para o trial · Cancele antes dos 7 dias sem cobrança · Sem taxas ocultas
           </div>
         </div>
       </div>

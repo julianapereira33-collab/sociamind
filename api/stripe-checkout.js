@@ -4,10 +4,14 @@ import Stripe from 'stripe';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
 const PRICES = {
-  pro_brl:      process.env.STRIPE_PRICE_PRO_BRL      || '',
-  business_brl: process.env.STRIPE_PRICE_BUSINESS_BRL || '',
-  pro_usd:      process.env.STRIPE_PRICE_PRO_USD      || '',
-  business_usd: process.env.STRIPE_PRICE_BUSINESS_USD || '',
+  solo_mensal:          process.env.STRIPE_PRICE_SOLO_M      || '',
+  negocio_mensal:       process.env.STRIPE_PRICE_NEGOCIO_M   || '',
+  agencia_mensal:       process.env.STRIPE_PRICE_AGENCIA_M   || '',
+  agent_secret_mensal:  process.env.STRIPE_PRICE_SECRET_M    || '',
+  solo_semestral:       process.env.STRIPE_PRICE_SOLO_S      || '',
+  negocio_semestral:    process.env.STRIPE_PRICE_NEGOCIO_S   || '',
+  agencia_semestral:    process.env.STRIPE_PRICE_AGENCIA_S   || '',
+  agent_secret_semestral: process.env.STRIPE_PRICE_SECRET_S  || '',
 };
 
 export default async function handler(req, res) {
@@ -21,9 +25,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Stripe não configurado' });
   }
 
-  const { planId, orgId, userId, email, currency = 'brl', successUrl, cancelUrl } = req.body;
+  const { planId, billing = 'mensal', orgId, userId, email, successUrl, cancelUrl } = req.body;
 
-  const priceKey = `${planId}_${currency}`;
+  const priceKey = `${planId}_${billing}`;
   const priceId  = PRICES[priceKey];
   if (!priceId) return res.status(400).json({ error: `Preço não encontrado: ${priceKey}` });
 
@@ -34,7 +38,7 @@ export default async function handler(req, res) {
       line_items: [{ price: priceId, quantity: 1 }],
       customer_email: email,
       client_reference_id: orgId,
-      metadata: { orgId, userId, planId },
+      metadata: { orgId, userId, planId, billing },
       success_url: successUrl || `${req.headers.origin}/?checkout=success&plan=${planId}`,
       cancel_url:  cancelUrl  || `${req.headers.origin}/?checkout=cancel`,
       subscription_data: {
