@@ -1683,6 +1683,48 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
     const [expandedCards,setExpandedCards]=useState({});
     const toggleExpand=(id)=>setExpandedCards(p=>({...p,[id]:!p[id]}));
 
+    // ── Fluxo de imagem ──────────────────────────────────────────────────────
+    const [faseImg,setFaseImg]=useState("idle"); // idle | gerando | escolha | overlay | done
+    const [opcoesImg,setOpcoesImg]=useState([]); // [{b64,preview}]
+    const [imgEscolhida,setImgEscolhida]=useState(null); // b64 da escolhida
+    const [imgPromptCustom,setImgPromptCustom]=useState("");
+    const [imgUpload,setImgUpload]=useState(null); // {preview, b64}
+    const imgUpRef=useRef(null);
+
+    async function gerarImagens(promptExtra=""){
+      if(!conteudoFinal) return;
+      setFaseImg("gerando"); setOpcoesImg([]); setImgEscolhida(null);
+      const basePrompt=`Hyperrealistic professional photo for social media post.
+Brand: ${co.name} | Niche: ${co.niche}.
+Visual concept: ${conteudoFinal.sugestao_visual||"professional lifestyle, clean modern setting"}.
+${promptExtra?`Additional instruction: ${promptExtra}`:""}
+Style: editorial photography, natural lighting, 4k quality, social media aesthetic.
+Do NOT include text or logos in the image.`;
+      try{
+        const r=await fetch("/api/generate-image",{method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({prompt:basePrompt,n:3,size:"1024x1024",quality:"high"})});
+        const d=await r.json();
+        if(d.error) throw new Error(d.error);
+        setOpcoesImg(d.images.map(img=>({b64:img.b64,preview:`data:image/png;base64,${img.b64}`})));
+        setFaseImg("escolha");
+      }catch(e){ flash(`❌ Erro ao gerar imagem: ${e.message}`,"coral"); setFaseImg("idle"); }
+    }
+
+    function uploadImagemFinal(e){
+      const f=e.target.files[0]; if(!f) return;
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        const b64=ev.target.result.split(",")[1];
+        setImgUpload({preview:ev.target.result,b64});
+        setImgEscolhida(b64);
+        setFaseImg("escolha");
+      };
+      reader.readAsDataURL(f);
+      e.target.value="";
+    }
+
+    function escolherImagem(b64){ setImgEscolhida(b64); setFaseImg("overlay"); }
+
     const SC={"Rascunho":C.muted,"Ag. aprovação":"#A0C4FF","Alteração":"#E8890C","Aprovado":"#FFD580","Agendado":"#DDD6FE","Publicado":"#10B981"};
     const PLATS=["Instagram","Facebook","TikTok","LinkedIn","WhatsApp","Canal WA","YouTube","Stories","Reels","Todas"];
     const TIPOS_C=["Post Feed","Reel","Story","Carrossel","LinkedIn Post","TikTok","YouTube Short","WhatsApp","Email"];
@@ -1790,6 +1832,9 @@ Retorne APENAS JSON:
     }
 
     function aprovarEAgendar(){
+      const imgFinal = imgEscolhida
+        ? `data:image/png;base64,${imgEscolhida}`
+        : (imagens[0]?.preview || null);
       const d={
         ...conteudoEdit,
         tipo:os.tipo,
@@ -1800,13 +1845,14 @@ Retorne APENAS JSON:
         status:"Rascunho",
         id:Date.now(),
         imagens:imagens.map(i=>({name:i.name,preview:i.preview})),
+        imagemFinal: imgFinal,
       };
       upd("agenda",[...agenda,d]);
-      // marca a OS como em produção
       if(os.titulo) upd("ordens",ordens.map(o=>o.titulo===os.titulo?{...o,status:"Em produção"}:o));
-      setNovaOS(false); setRoteiro(null); setRoteiroAprov(false); setConteudoFinal(null); setImagens([]);
+      setNovaOS(false); setRoteiro(null); setRoteiroAprov(false); setConteudoFinal(null);
+      setImagens([]); setFaseImg("idle"); setOpcoesImg([]); setImgEscolhida(null); setImgUpload(null);
       setFase("aprovacao");
-      flash("✅ Conteúdo criado e enviado para Aprovação!","teal");
+      flash("✅ Conteúdo e arte enviados para Aprovação!","teal");
     }
     function addItem(){
       upd("agenda",[...agenda,{...item,id:Date.now()}]);
@@ -2035,8 +2081,109 @@ RETORNE APENAS JSON válido, sem texto antes ou depois:
             </div>}
             <div style={{display:"flex",gap:8}}>
               <button onClick={addOS} style={{background:"none",border:`1px solid ${C.border2}`,color:C.text,padding:"8px 16px",borderRadius:8,cursor:"pointer",fontSize:13}}>Salvar na lista</button>
-              <button onClick={aprovarEAgendar} style={{background:"linear-gradient(135deg,#10b981,#059669)",color:"#fff",border:"none",padding:"9px 22px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:"0 4px 18px #10b98130"}}><Check size={14}/> Aprovar e Enviar para Calendário</button>
+              <button onClick={()=>{ setFaseImg("idle"); gerarImagens(); }}
+                style={{background:G.primary,color:"#fff",border:"none",padding:"9px 22px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:`0 4px 18px ${T.primary}30`}}>
+                <Image size={14}/> Aprovar Script → Gerar Imagem
+              </button>
             </div>
+          </div>}
+
+          {/* ── FLUXO DE IMAGEM ─────────────────────────────────────────── */}
+          {conteudoFinal && faseImg !== "idle" && <div style={{background:C.surf,border:`1px solid ${T.primary}30`,borderRadius:14,padding:20,marginTop:12}}>
+            <div style={{fontSize:11,fontWeight:900,letterSpacing:3,background:G.hero,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",marginBottom:16,textTransform:"uppercase"}}>
+              {faseImg==="gerando"?"⏳ Gerando 3 opções de imagem com IA…":faseImg==="overlay"?"🎨 Arte Final — Revisão":"📸 Escolha a Imagem do Post"}
+            </div>
+
+            {/* Gerando */}
+            {faseImg==="gerando"&&<div style={{textAlign:"center",padding:"32px 0",color:C.muted,fontSize:13}}>
+              <div style={{fontSize:32,marginBottom:12}}>🤖</div>
+              Gerando 3 fotos hiperrealistas baseadas no conceito do post…<br/>
+              <span style={{fontSize:11}}>Pode levar 20-30 segundos</span>
+            </div>}
+
+            {/* Escolha */}
+            {faseImg==="escolha"&&<div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:14}}>
+                {opcoesImg.map((img,i)=>(
+                  <div key={i} onClick={()=>escolherImagem(img.b64)}
+                    style={{cursor:"pointer",borderRadius:10,overflow:"hidden",border:`2px solid ${imgEscolhida===img.b64?T.primary:C.border}`,transition:"border .2s",position:"relative"}}>
+                    <img src={img.preview} alt={`Opção ${i+1}`} style={{width:"100%",aspectRatio:"1",objectFit:"cover",display:"block"}}/>
+                    <div style={{position:"absolute",top:6,left:6,background:imgEscolhida===img.b64?T.primary:"rgba(0,0,0,.5)",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10}}>
+                      {imgEscolhida===img.b64?"✓ Selecionada":`Opção ${i+1}`}
+                    </div>
+                  </div>
+                ))}
+                {imgUpload&&<div onClick={()=>escolherImagem(imgUpload.b64)}
+                  style={{cursor:"pointer",borderRadius:10,overflow:"hidden",border:`2px solid ${imgEscolhida===imgUpload.b64?T.primary:C.border}`,position:"relative"}}>
+                  <img src={imgUpload.preview} alt="Sua foto" style={{width:"100%",aspectRatio:"1",objectFit:"cover",display:"block"}}/>
+                  <div style={{position:"absolute",top:6,left:6,background:imgEscolhida===imgUpload.b64?T.primary:"rgba(0,0,0,.5)",color:"#fff",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10}}>
+                    {imgEscolhida===imgUpload.b64?"✓ Selecionada":"Sua foto"}
+                  </div>
+                </div>}
+              </div>
+
+              {/* Alteração / upload */}
+              <div style={{background:C.surf2,borderRadius:10,padding:14,marginBottom:12}}>
+                <div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:8}}>PEDIR ALTERAÇÃO OU ENVIAR FOTO</div>
+                <div style={{display:"flex",gap:8,marginBottom:8}}>
+                  {["fundo branco","ao ar livre","escritório moderno","sem pessoas","mais colorido"].map(s=>(
+                    <button key={s} onClick={()=>setImgPromptCustom(s)}
+                      style={{background:imgPromptCustom===s?T.primary:"none",color:imgPromptCustom===s?"#fff":C.muted,border:`1px solid ${imgPromptCustom===s?T.primary:C.border}`,padding:"4px 10px",borderRadius:20,cursor:"pointer",fontSize:11,whiteSpace:"nowrap"}}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <input value={imgPromptCustom} onChange={e=>setImgPromptCustom(e.target.value)}
+                    placeholder="Ou descreva o que quer na imagem…"
+                    style={{...inp,flex:1,fontSize:12}}/>
+                  <button onClick={()=>gerarImagens(imgPromptCustom)}
+                    style={{background:G.primary,color:"#fff",border:"none",padding:"8px 14px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:700,whiteSpace:"nowrap"}}>
+                    🔄 Regerar
+                  </button>
+                  <button onClick={()=>imgUpRef.current?.click()}
+                    style={{background:"none",border:`1px solid ${C.border2}`,color:C.text,padding:"8px 14px",borderRadius:8,cursor:"pointer",fontSize:12,whiteSpace:"nowrap"}}>
+                    📤 Upload
+                  </button>
+                  <input ref={imgUpRef} type="file" accept="image/*" style={{display:"none"}} onChange={uploadImagemFinal}/>
+                </div>
+              </div>
+
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>setFaseImg("idle")} style={{background:"none",border:`1px solid ${C.border2}`,color:C.muted,padding:"8px 16px",borderRadius:8,cursor:"pointer",fontSize:12}}>← Voltar</button>
+                <button onClick={()=>imgEscolhida?setFaseImg("overlay"):flash("Escolha uma imagem primeiro","coral")}
+                  disabled={!imgEscolhida}
+                  style={{background:imgEscolhida?G.primary:"none",color:imgEscolhida?"#fff":C.muted,border:imgEscolhida?"none":`1px solid ${C.border}`,padding:"9px 22px",borderRadius:9,cursor:imgEscolhida?"pointer":"default",fontWeight:700,fontSize:13,flex:1,boxShadow:imgEscolhida?`0 4px 18px ${T.primary}30`:"none"}}>
+                  Usar esta imagem → Ver Arte Final
+                </button>
+              </div>
+            </div>}
+
+            {/* Arte Final / Overlay */}
+            {faseImg==="overlay"&&imgEscolhida&&<div>
+              <div style={{position:"relative",borderRadius:12,overflow:"hidden",marginBottom:14,maxWidth:400,margin:"0 auto 14px"}}>
+                <img src={`data:image/png;base64,${imgEscolhida}`} alt="Arte final" style={{width:"100%",display:"block",borderRadius:12}}/>
+                {/* Overlay de texto + marca */}
+                <div style={{position:"absolute",bottom:0,left:0,right:0,background:"linear-gradient(transparent,rgba(0,0,0,.75))",padding:"32px 16px 16px",borderRadius:"0 0 12px 12px"}}>
+                  <div style={{color:T.primary,fontSize:9,fontWeight:800,letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>{co.name}</div>
+                  <div style={{color:"#fff",fontSize:13,fontWeight:700,lineHeight:1.3}}>{conteudoEdit.hook||conteudoEdit.titulo}</div>
+                </div>
+                {/* Logo / nome no canto */}
+                <div style={{position:"absolute",top:10,right:10,background:T.primary,color:"#fff",fontSize:9,fontWeight:800,padding:"3px 8px",borderRadius:6,letterSpacing:1}}>
+                  {co.name}
+                </div>
+              </div>
+              <div style={{background:`${T.primary}10`,borderRadius:10,padding:"10px 14px",fontSize:12,color:C.muted,marginBottom:14}}>
+                ✅ Imagem + texto da marca sobrepostos. Esta é a arte final que vai para o agendamento.
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>setFaseImg("escolha")} style={{background:"none",border:`1px solid ${C.border2}`,color:C.muted,padding:"8px 16px",borderRadius:8,cursor:"pointer",fontSize:12}}>← Trocar imagem</button>
+                <button onClick={aprovarEAgendar}
+                  style={{background:"linear-gradient(135deg,#10b981,#059669)",color:"#fff",border:"none",padding:"9px 22px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:"0 4px 18px #10b98130"}}>
+                  <Check size={14}/> Aprovar Arte e Agendar
+                </button>
+              </div>
+            </div>}
           </div>}
         </div>}
 
