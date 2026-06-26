@@ -1976,6 +1976,13 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
     const [imgPromptCustom,setImgPromptCustom]=useState("");
     const [imgUpload,setImgUpload]=useState(null); // {preview, b64}
     const imgUpRef=useRef(null);
+    // ── Programação IA — briefing semanal ────────────────────────────────────
+    const [tomVoz,setTomVoz]=useState(form.sentimentoMarca||"empoderador e acolhedor");
+    const [previsaoSemana,setPrevisaoSemana]=useState("");
+    const [platSemana,setPlatSemana]=useState("Instagram");
+    const [modoSemana,setModoSemana]=useState("semana"); // semana | rapido
+    const [statusN8n,setStatusN8n]=useState("idle");
+    const [resultadoN8n,setResultadoN8n]=useState(null);
 
     async function gerarImagens(promptExtra=""){
       if(!conteudoFinal) return;
@@ -2204,6 +2211,33 @@ RETORNE APENAS JSON válido, sem texto antes ou depois:
         flash("✅ Programação semanal gerada!","teal");
       }catch(e){ flash(`❌ Erro: ${e.message}`,"coral"); }
       setGerando(false);
+    }
+
+    async function gerarRapido(){
+      if(!previsaoSemana.trim()) return;
+      setStatusN8n("loading"); setResultadoN8n(null);
+      const N8N_WEBHOOK="https://juinfo.app.n8n.cloud/webhook/social-agent-trigger";
+      const payload={
+        empresa: form.nomeFantasia||co.name,
+        nicho: co.niche,
+        plataforma: platSemana,
+        publico: (form.publicos||[])[0]?.nome||co.niche,
+        tom: tomVoz,
+        solicitacao: previsaoSemana,
+      };
+      try{
+        const res=await fetch(N8N_WEBHOOK,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+        const data=await res.json();
+        setResultadoN8n(data); setStatusN8n("done");
+        flash("✨ 3 opções geradas!","teal");
+      }catch(e){ setStatusN8n("error"); flash("Erro ao gerar — verifique o n8n","coral"); }
+    }
+
+    function salvarOpcaoN8n(opcao,idx){
+      const item={id:Date.now(),tipo:"Post Feed",titulo:`${platSemana} — ${new Date().toLocaleDateString("pt-BR")}`,legenda:opcao,publicoId:"",plataforma:platSemana,data:new Date().toISOString().split("T")[0],hora:"18:00",status:"Ag. aprovação"};
+      upd("agenda",[...(form.agenda||[]),item]);
+      save();
+      flash(`✓ Opção ${idx+1} salva no calendário!`,"teal");
     }
 
     const FASES=[
@@ -2509,48 +2543,102 @@ RETORNE APENAS JSON válido, sem texto antes ou depois:
 
       {/* ── PROGRAMAÇÃO IA ── */}
       {fase==="semana"&&<>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,gap:12,flexWrap:"wrap"}}>
-          <div>
-            <div style={{fontSize:14,fontWeight:600,color:C.text}}>Programação gerada pela IA para os próximos 7 dias</div>
-            <div style={{fontSize:12,color:C.muted,marginTop:2}}>
+        {/* ── Briefing da semana ── */}
+        <div style={{background:C.surf,border:`1px solid ${T.primary}20`,borderRadius:14,padding:"20px",marginBottom:16}}>
+          <div style={{fontSize:9,fontWeight:900,letterSpacing:3,background:G.hero,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",marginBottom:14,textTransform:"uppercase"}}>Briefing da Semana</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+            <F label="Plataforma foco">
+              <select value={platSemana} onChange={e=>setPlatSemana(e.target.value)} style={{...inp,cursor:"pointer"}}>
+                {["Instagram","Facebook","TikTok","WhatsApp","Stories","Reels","LinkedIn"].map(p=><option key={p}>{p}</option>)}
+              </select>
+            </F>
+            <F label="Tom de voz">
+              <input value={tomVoz} onChange={e=>setTomVoz(e.target.value)} placeholder="empoderador e acolhedor" style={{...inp,fontFamily:"inherit"}} />
+            </F>
+          </div>
+          <F label="O que tem previsto essa semana? (promoções, eventos, lançamentos…)">
+            <textarea value={previsaoSemana} onChange={e=>setPrevisaoSemana(e.target.value)}
+              placeholder={`Ex: lançamento da coleção verão na quinta\nEx: promoção 20% off no sábado\nEx: semana focada em autoestima + dicas`}
+              rows={3} style={{...inp,resize:"vertical",lineHeight:1.6,fontFamily:"inherit"}} />
+          </F>
+          {/* Modos */}
+          <div style={{display:"flex",gap:8,marginTop:14,flexWrap:"wrap"}}>
+            <button onClick={()=>setModoSemana("rapido")} style={{background:modoSemana==="rapido"?G.primary:C.surf3,color:modoSemana==="rapido"?"#fff":C.text,border:`1px solid ${modoSemana==="rapido"?T.primary:C.border2}`,padding:"9px 18px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",gap:7}}>
+              ✨ 3 Opções Rápidas <span style={{fontSize:11,opacity:.7}}>(n8n)</span>
+            </button>
+            <button onClick={()=>setModoSemana("semana")} style={{background:modoSemana==="semana"?G.primary:C.surf3,color:modoSemana==="semana"?"#fff":C.text,border:`1px solid ${modoSemana==="semana"?T.primary:C.border2}`,padding:"9px 18px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",gap:7}}>
+              📅 Programar Semana Inteira <span style={{fontSize:11,opacity:.7}}>(7 dias)</span>
+            </button>
+          </div>
+        </div>
+
+        {/* ── Modo: 3 Opções Rápidas (n8n) ── */}
+        {modoSemana==="rapido"&&<>
+          <div style={{display:"flex",justifyContent:"flex-end",marginBottom:14}}>
+            <button onClick={gerarRapido} disabled={statusN8n==="loading"||!previsaoSemana.trim()}
+              style={{background:statusN8n==="loading"||!previsaoSemana.trim()?C.surf3:G.primary,color:statusN8n==="loading"||!previsaoSemana.trim()?C.muted:"#fff",border:"none",padding:"11px 28px",borderRadius:10,cursor:statusN8n==="loading"||!previsaoSemana.trim()?"default":"pointer",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",gap:8,boxShadow:previsaoSemana.trim()&&statusN8n!=="loading"?`0 4px 20px ${T.primary}40`:"none"}}>
+              {statusN8n==="loading"?<>⏳ Gerando…</>:<>✨ Gerar 3 Opções</>}
+            </button>
+          </div>
+          {statusN8n==="error"&&<div style={{background:"#FF525210",border:"1px solid #FF525230",borderRadius:12,padding:"14px 16px",color:C.error,fontSize:13,marginBottom:12}}>❌ Erro ao conectar com o n8n. Verifique se o workflow está ativo.</div>}
+          {statusN8n==="done"&&resultadoN8n&&<>
+            <div style={{fontSize:13,fontWeight:700,background:G.hero,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",marginBottom:12}}>3 Opções Geradas — {platSemana}</div>
+            {[resultadoN8n.opcao1||resultadoN8n[0]?.legenda||resultadoN8n[0],resultadoN8n.opcao2||resultadoN8n[1]?.legenda||resultadoN8n[1],resultadoN8n.opcao3||resultadoN8n[2]?.legenda||resultadoN8n[2]].filter(Boolean).map((opcao,idx)=>(
+              <div key={idx} style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px",marginBottom:12,position:"relative"}}>
+                <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:G.primary,borderRadius:"14px 14px 0 0"}} />
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                  <div style={{fontSize:11,fontWeight:800,background:G.hero,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",letterSpacing:2}}>OPÇÃO {idx+1}</div>
+                  <button onClick={()=>salvarOpcaoN8n(typeof opcao==="string"?opcao:JSON.stringify(opcao),idx)} style={{background:G.primary,color:"#fff",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11,boxShadow:`0 2px 12px ${T.primary}40`}}>+ Calendário</button>
+                </div>
+                <div style={{fontSize:13,color:C.text,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{typeof opcao==="string"?opcao:(opcao?.legenda||opcao?.texto||JSON.stringify(opcao))}</div>
+              </div>
+            ))}
+            <div style={{background:`${T.primary}10`,border:`1px solid ${T.primary}20`,borderRadius:12,padding:"14px 16px",fontSize:12,color:C.muted}}>💡 Clique em <strong style={{color:C.text}}>+ Calendário</strong> para salvar a opção. Ela ficará com status <strong style={{color:C.text}}>Ag. aprovação</strong>.</div>
+          </>}
+        </>}
+
+        {/* ── Modo: Programar Semana Inteira ── */}
+        {modoSemana==="semana"&&<>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,gap:12,flexWrap:"wrap"}}>
+            <div style={{fontSize:12,color:C.muted}}>
               {ordens.filter(o=>o.status==="Pendente").length>0
                 ?`${ordens.filter(o=>o.status==="Pendente").length} solicitação(ões) pendente(s) serão incluídas`
-                :"A IA usará a estratégia da empresa para montar a semana"}
+                :"A IA usará a estratégia + briefing acima para montar 7 posts"}
             </div>
+            <button onClick={gerarSemana} disabled={gerando} style={{background:gerando?C.surf3:G.primary,color:gerando?C.muted:"#fff",border:"none",padding:"10px 22px",borderRadius:10,cursor:gerando?"default":"pointer",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",gap:8,boxShadow:gerando?"none":`0 4px 20px ${T.primary}40`}}>
+              {gerando?<><RefreshCw size={14} style={{animation:"spin 1s linear infinite"}}/> Gerando…</>:<><Sparkles size={14}/> Gerar 7 Dias</>}
+            </button>
           </div>
-          <button onClick={gerarSemana} disabled={gerando} style={{background:gerando?C.surf3:G.primary,color:gerando?C.muted:"#fff",border:"none",padding:"10px 22px",borderRadius:10,cursor:gerando?"default":"pointer",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",gap:8,boxShadow:gerando?"none":`0 4px 20px ${T.primary}40`}}>
-            {gerando?<><RefreshCw size={14} style={{animation:"spin 1s linear infinite"}}/> Gerando…</>:<><Sparkles size={14}/> Gerar Semana com IA</>}
-          </button>
-        </div>
-        {!semana&&!gerando&&<div style={{background:C.surf,border:`1px dashed ${C.border2}`,borderRadius:14,padding:"50px",textAlign:"center",color:C.muted}}>
-          <Sparkles size={32} color={C.muted} style={{margin:"0 auto 12px"}} />
-          <div style={{fontSize:15,fontWeight:600,marginBottom:6}}>Nenhuma programação gerada ainda</div>
-          <div style={{fontSize:13}}>Clique em "Gerar Semana com IA" para criar 7 posts prontos para aprovação</div>
-        </div>}
-        {semana&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
-          {semana.map((d,i)=>(
-            <div key={i} style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:13,padding:"16px 18px"}}>
-              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
-                <div style={{flex:1}}>
-                  <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
-                    <span style={{fontSize:11,fontWeight:800,color:T.primaryL,background:`${T.primary}18`,padding:"3px 10px",borderRadius:20}}>{new Date(d.data+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"short"})}</span>
-                    <Badge color={T.primaryL}>{d.tipo}</Badge>
-                    <Badge color={C.blue}>{d.plataforma}</Badge>
-                    {d.hora&&<span style={{fontSize:10,color:C.muted}}>🕐 {d.hora}</span>}
+          {!semana&&!gerando&&<div style={{background:C.surf,border:`1px dashed ${C.border2}`,borderRadius:14,padding:"50px",textAlign:"center",color:C.muted}}>
+            <Sparkles size={32} color={C.muted} style={{margin:"0 auto 12px"}} />
+            <div style={{fontSize:15,fontWeight:600,marginBottom:6}}>Nenhuma programação gerada ainda</div>
+            <div style={{fontSize:13}}>Preencha o briefing acima e clique em "Gerar 7 Dias"</div>
+          </div>}
+          {semana&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {semana.map((d,i)=>(
+              <div key={i} style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:13,padding:"16px 18px"}}>
+                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
+                  <div style={{flex:1}}>
+                    <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}>
+                      <span style={{fontSize:11,fontWeight:800,color:T.primaryL,background:`${T.primary}18`,padding:"3px 10px",borderRadius:20}}>{new Date(d.data+"T12:00:00").toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"short"})}</span>
+                      <Badge color={T.primaryL}>{d.tipo}</Badge>
+                      <Badge color={C.blue}>{d.plataforma}</Badge>
+                      {d.hora&&<span style={{fontSize:10,color:C.muted}}>🕐 {d.hora}</span>}
+                    </div>
+                    <div style={{fontWeight:700,fontSize:14,color:C.text,marginBottom:4}}>{d.titulo}</div>
+                    {d.hook&&<div style={{fontSize:13,color:T.primaryL,fontStyle:"italic",marginBottom:6}}>"{d.hook}"</div>}
+                    <div style={{fontSize:13,color:C.muted,lineHeight:1.6,whiteSpace:"pre-wrap"}}>{d.legenda?.slice(0,200)}{d.legenda?.length>200?"…":""}</div>
+                    {d.pilar&&<div style={{fontSize:11,color:C.muted,marginTop:6}}>📌 Pilar: {d.pilar}</div>}
                   </div>
-                  <div style={{fontWeight:700,fontSize:14,color:C.text,marginBottom:4}}>{d.titulo}</div>
-                  {d.hook&&<div style={{fontSize:13,color:T.primaryL,fontStyle:"italic",marginBottom:6}}>"{ d.hook}"</div>}
-                  <div style={{fontSize:13,color:C.muted,lineHeight:1.6,whiteSpace:"pre-wrap"}}>{d.legenda?.slice(0,200)}{d.legenda?.length>200?"…":""}</div>
-                  {d.pilar&&<div style={{fontSize:11,color:C.muted,marginTop:6}}>📌 Pilar: {d.pilar}</div>}
+                  <button onClick={()=>addToAgenda(d)} style={{background:G.primary,color:"#fff",border:"none",padding:"8px 14px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0,display:"flex",alignItems:"center",gap:6}}><Plus size={12}/> Adicionar</button>
                 </div>
-                <button onClick={()=>addToAgenda(d)} style={{background:G.primary,color:"#fff",border:"none",padding:"8px 14px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0,display:"flex",alignItems:"center",gap:6}}><Plus size={12}/> Adicionar</button>
               </div>
+            ))}
+            <div style={{textAlign:"center",padding:"10px 0"}}>
+              <button onClick={()=>{semana.forEach(d=>addToAgenda(d));flash("✅ Toda a semana adicionada ao calendário!","teal");}} style={{background:`${T.primary}15`,color:T.primaryL,border:`1px solid ${T.primary}30`,padding:"10px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>✅ Adicionar Semana Inteira ao Calendário</button>
             </div>
-          ))}
-          <div style={{textAlign:"center",padding:"10px 0"}}>
-            <button onClick={()=>{semana.forEach(d=>addToAgenda(d));flash("✅ Toda a semana adicionada ao calendário!","teal");}} style={{background:`${T.primary}15`,color:T.primaryL,border:`1px solid ${T.primary}30`,padding:"10px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>✅ Adicionar Semana Inteira ao Calendário</button>
-          </div>
-        </div>}
+          </div>}
+        </>}
       </>}
 
       {/* ── APROVAÇÃO ── */}
