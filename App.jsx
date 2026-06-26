@@ -10,7 +10,8 @@ import {
   Image, Megaphone, Settings, Eye, EyeOff, Trash2,
   Edit3, Star, TrendingUp, Globe, MessageSquare, Shield,
   Mail, Radio, Check, X, RefreshCw, ChevronDown, ChevronUp, Upload, LogIn,
-  ClipboardCheck, BellRing, LayoutDashboard, Bot, Crown, Activity, HelpCircle
+  ClipboardCheck, BellRing, LayoutDashboard, Bot, Crown, Activity, HelpCircle,
+  Target, Inbox, BarChart, Layers
 } from "lucide-react";
 // inp is defined inside App() as a useMemo
 const FONT_URL = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Bebas+Neue&family=Anton&family=Abril+Fatface&family=Oswald:wght@600&family=Playfair+Display:ital,wght@0,700;1,400&family=Merriweather:wght@700&family=Montserrat:wght@700&family=Poppins:wght@400;600;700&family=Raleway:wght@700&family=Josefin+Sans:wght@700&family=Nunito:wght@800&family=DM+Sans:wght@700&family=Dancing+Script:wght@700&family=Pacifico&family=Lobster&family=Sacramento&family=Cormorant+Garamond:wght@700&family=Libre+Baskerville:wght@700&display=swap";
@@ -199,19 +200,20 @@ const EMPTY_DATA = {
   ],
 };
 const TABS = [
-  {id:"resultados", Icon:LayoutDashboard, label:"Relatório"},
-  {id:"scanner",    Icon:ScanLine,        label:"Scanner"},
-  {id:"identidade", Icon:Palette,         label:"Identidade"},
-  {id:"produtos",   Icon:Package,         label:"Produtos"},
-  {id:"publicos",   Icon:Users,           label:"Públicos"},
-  {id:"redes",      Icon:Smartphone,      label:"Redes"},
-  {id:"conteudo",   Icon:FileText,        label:"Conteúdos"},
-  {id:"campanhas",  Icon:Megaphone,       label:"Campanha"},
-  {id:"aprovacoes", Icon:ClipboardCheck,  label:"Aprovações"},
-  {id:"gerar",      Icon:Sparkles,        label:"Gerar"},
-  {id:"integracoes",Icon:Plug,            label:"Integrações"},
-  {id:"cofre",      Icon:Lock,            label:"Cofre"},
-  {id:"ajuda",      Icon:HelpCircle,      label:"Ajuda"},
+  {id:"resultados",  Icon:LayoutDashboard, label:"Relatório"},
+  {id:"scanner",     Icon:ScanLine,        label:"Scanner"},
+  {id:"identidade",  Icon:Palette,         label:"Identidade"},
+  {id:"produtos",    Icon:Package,         label:"Produtos"},
+  {id:"publicos",    Icon:Users,           label:"Públicos"},
+  {id:"redes",       Icon:Smartphone,      label:"Redes"},
+  {id:"estrategia",  Icon:Target,          label:"Estratégia"},
+  {id:"conteudo",    Icon:Sparkles,        label:"Conteúdo"},
+  {id:"agenda",      Icon:CalendarClock,   label:"Agenda"},
+  {id:"disparos",    Icon:Megaphone,       label:"Disparos"},
+  {id:"mensagens",   Icon:Inbox,           label:"Mensagens"},
+  {id:"integracoes", Icon:Plug,            label:"Integrações"},
+  {id:"cofre",       Icon:Lock,            label:"Cofre"},
+  {id:"ajuda",       Icon:HelpCircle,      label:"Ajuda"},
 ];
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
@@ -532,18 +534,18 @@ export default function App({ session, onSignOut }) {
       {/* Content */}
       <div style={{flex:1,overflowY:"auto",padding:"24px 22px"}}>
         <div style={{maxWidth:820,margin:"0 auto"}}>
-          {tab==="gerar"       &&<TabGerar />}
           {tab==="scanner"     &&<TabScanner />}
           {tab==="resultados"  &&<TabResultados />}
-          {tab==="conteudo"    &&<TabConteudo />}
           {tab==="identidade"  &&<TabIdentidade />}
           {tab==="produtos"    &&<TabProdutos />}
           {tab==="publicos"    &&<TabPublicos />}
           {tab==="redes"       &&<TabRedes />}
-          {tab==="integracoes" &&<TabIntegracoes />}
+          {tab==="estrategia"  &&<TabEstrategia />}
+          {tab==="conteudo"    &&<TabConteudo />}
+          {tab==="agenda"      &&<TabAgendaHub />}
+          {tab==="disparos"    &&<TabCampanhas />}
           {tab==="mensagens"   &&<TabMensagens />}
-          {tab==="campanhas"   &&<TabCampanhas />}
-          {tab==="aprovacoes"  &&<TabAprovacoes />}
+          {tab==="integracoes" &&<TabIntegracoes />}
           {tab==="cofre"       &&<TabCofre />}
           {tab==="ajuda"       &&<TabAjuda />}
         </div>
@@ -1649,6 +1651,290 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
         <F label="Hashtags padrão desta empresa"><TA k="hashtags" ph="#suamarca #nicho #cidade…" rows={2} /></F>
         <G2 ch={[<F label="Conteúdo que mais performa"><TA k="melhorConteudo" ph="Reels de resultado, antes/depois…" rows={2} /></F>,<F label="Metas 90 dias"><TA k="metaRedes" ph="X seguidores, Y leads/mês…" rows={2} /></F>]} />
       </Sec>
+    </>;
+  }
+
+  // ─── ESTRATÉGIA ───────────────────────────────────────────────────────────
+  function TabEstrategia(){
+    const est = form.estrategia || {};
+    const updE = (k,v) => upd("estrategia",{...est,[k]:v});
+    const REDES = ["Instagram","Facebook","TikTok","LinkedIn","YouTube","Stories","Reels"];
+    const TIPOS_POST = ["Post Feed","Story","Reel","Carrossel","LinkedIn Post","TikTok"];
+    const HORARIOS = ["06:00","07:00","08:00","09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00"];
+    const DIAS = ["Segunda","Terça","Quarta","Quinta","Sexta","Sábado","Domingo"];
+
+    const freq = est.frequencia || {};
+    const updFreq = (rede,tipo,val) => updE("frequencia",{...freq,[rede]:{...(freq[rede]||{}),[tipo]:Number(val)}});
+
+    const horarios = est.horarios || {};
+    const updHor = (tipo,campo,val) => updE("horarios",{...horarios,[tipo]:{...(horarios[tipo]||{}),[campo]:val}});
+
+    const respostas = est.respostas || [];
+    const [novaResp,setNovaResp]=useState({gatilho:"",resposta:"",acao:"responder",produto:""});
+    const addResp=()=>{ if(!novaResp.gatilho||!novaResp.resposta) return; updE("respostas",[...respostas,{...novaResp,id:Date.now()}]); setNovaResp({gatilho:"",resposta:"",acao:"responder",produto:""}); flash("✓ Resposta adicionada","teal"); };
+    const delResp=(id)=>updE("respostas",respostas.filter(r=>r.id!==id));
+
+    const [abaEst,setAbaEst]=useState("frequencia");
+    const ABAS_EST=[{id:"frequencia",label:"📅 Frequência & Horários"},{id:"respostas",label:"💬 Respostas Automáticas"},{id:"pilares",label:"🎯 Pilares & Tom"}];
+
+    return <>
+      <div style={{marginBottom:20,padding:"18px 20px",background:G.glow,border:`1px solid ${T.primary}20`,borderRadius:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:6}}>
+          <div style={{width:44,height:44,borderRadius:12,background:G.primary,display:"flex",alignItems:"center",justifyContent:"center"}}><Target size={20} color="#fff"/></div>
+          <div>
+            <div style={{fontSize:17,fontWeight:700,background:G.hero,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>Estratégia de Conteúdo</div>
+            <div style={{fontSize:12,color:C.muted}}>Define frequência, horários ideais e respostas automáticas — a IA usa isso para gerar a semana</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sub-abas */}
+      <div style={{display:"flex",gap:8,marginBottom:20,overflowX:"auto"}}>
+        {ABAS_EST.map(a=><button key={a.id} onClick={()=>setAbaEst(a.id)}
+          style={{background:abaEst===a.id?G.primary:"none",color:abaEst===a.id?"#fff":C.muted,border:`1px solid ${abaEst===a.id?T.primary:C.border}`,padding:"7px 16px",borderRadius:20,cursor:"pointer",fontSize:12,fontWeight:600,whiteSpace:"nowrap"}}>
+          {a.label}
+        </button>)}
+      </div>
+
+      {/* Frequência & Horários */}
+      {abaEst==="frequencia"&&<>
+        <Sec title="Posts por semana — por rede e tipo">
+          <div style={{overflowX:"auto"}}>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+              <thead>
+                <tr>
+                  <th style={{textAlign:"left",padding:"6px 10px",color:C.muted,fontWeight:600}}>Rede</th>
+                  {TIPOS_POST.map(t=><th key={t} style={{textAlign:"center",padding:"6px 8px",color:C.muted,fontWeight:600,fontSize:11}}>{t}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {REDES.map(r=>(
+                  <tr key={r} style={{borderTop:`1px solid ${C.border}`}}>
+                    <td style={{padding:"8px 10px",fontWeight:600,color:C.text,fontSize:12}}>{r}</td>
+                    {TIPOS_POST.map(t=>(
+                      <td key={t} style={{textAlign:"center",padding:"4px 6px"}}>
+                        <input type="number" min={0} max={14} value={freq[r]?.[t]||0}
+                          onChange={e=>updFreq(r,t,e.target.value)}
+                          style={{...inp,width:48,textAlign:"center",padding:"4px 6px",fontSize:12}}/>
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Sec>
+        <Sec title="Melhores horários por tipo de conteúdo">
+          {TIPOS_POST.map(t=>(
+            <div key={t} style={{marginBottom:12}}>
+              <div style={{fontSize:12,fontWeight:600,color:C.text,marginBottom:6}}>{t}</div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontSize:11,color:C.muted}}>Dias:</span>
+                  {DIAS.map(d=>(
+                    <button key={d} onClick={()=>{
+                      const cur=horarios[t]?.dias||[];
+                      updHor(t,"dias",cur.includes(d)?cur.filter(x=>x!==d):[...cur,d]);
+                    }} style={{background:(horarios[t]?.dias||[]).includes(d)?T.primary:"none",color:(horarios[t]?.dias||[]).includes(d)?"#fff":C.muted,border:`1px solid ${(horarios[t]?.dias||[]).includes(d)?T.primary:C.border}`,padding:"3px 8px",borderRadius:10,cursor:"pointer",fontSize:10}}>
+                      {d.slice(0,3)}
+                    </button>
+                  ))}
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontSize:11,color:C.muted}}>Horário:</span>
+                  <select value={horarios[t]?.hora||"09:00"} onChange={e=>updHor(t,"hora",e.target.value)} style={{...inp,width:90,fontSize:11,padding:"3px 6px"}}>
+                    {HORARIOS.map(h=><option key={h}>{h}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+          ))}
+        </Sec>
+      </>}
+
+      {/* Respostas Automáticas */}
+      {abaEst==="respostas"&&<>
+        <Sec title="Respostas automáticas por gatilho">
+          <div style={{fontSize:12,color:C.muted,marginBottom:14}}>Configure o que a IA responde quando detectar cada situação nos comentários e DMs</div>
+          {respostas.map(r=>(
+            <div key={r.id} style={{background:C.surf2,borderRadius:10,padding:"12px 14px",marginBottom:8,display:"flex",gap:10,alignItems:"flex-start"}}>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",gap:8,marginBottom:4,flexWrap:"wrap"}}>
+                  <span style={{background:`${T.primary}20`,color:T.primary,fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10}}>GATILHO: {r.gatilho}</span>
+                  <span style={{background:`${T.secondary}20`,color:T.secondary,fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10}}>{r.acao}</span>
+                  {r.produto&&<span style={{background:"#F5A62320",color:"#F5A623",fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10}}>Produto: {r.produto}</span>}
+                </div>
+                <div style={{fontSize:12,color:C.text,lineHeight:1.5}}>{r.resposta}</div>
+              </div>
+              <button onClick={()=>delResp(r.id)} style={{background:"none",border:"none",cursor:"pointer",color:C.muted,padding:4}}><Trash2 size={14}/></button>
+            </div>
+          ))}
+          <div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:12,padding:16,marginTop:8}}>
+            <div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:10}}>NOVA RESPOSTA AUTOMÁTICA</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+              <F label="Gatilho (o que detectar)">
+                <input value={novaResp.gatilho} onChange={e=>setNovaResp(p=>({...p,gatilho:e.target.value}))}
+                  placeholder="Ex: quanto custa?, preço, valor" style={{...inp,fontSize:12}}/>
+              </F>
+              <F label="Ação">
+                <select value={novaResp.acao} onChange={e=>setNovaResp(p=>({...p,acao:e.target.value}))} style={{...inp,fontSize:12}}>
+                  <option value="responder">Responder automaticamente</option>
+                  <option value="encaminhar_whatsapp">Encaminhar para WhatsApp</option>
+                  <option value="escalar_humano">Escalar para humano</option>
+                  <option value="enviar_link">Enviar link</option>
+                </select>
+              </F>
+            </div>
+            <F label="Resposta / mensagem">
+              <textarea value={novaResp.resposta} onChange={e=>setNovaResp(p=>({...p,resposta:e.target.value}))}
+                placeholder="Ex: Oi! Nosso plano começa em R$197/mês. Quer saber mais? Me chama no WhatsApp 👇"
+                rows={3} style={{...inp,resize:"vertical",fontSize:12,fontFamily:"inherit"}}/>
+            </F>
+            <F label="Produto relacionado (opcional)">
+              <select value={novaResp.produto} onChange={e=>setNovaResp(p=>({...p,produto:e.target.value}))} style={{...inp,fontSize:12}}>
+                <option value="">Todos os produtos</option>
+                {(form.produtos||[]).map(p=><option key={p.id} value={p.nome}>{p.nome}</option>)}
+              </select>
+            </F>
+            <button onClick={addResp} style={{background:G.primary,color:"#fff",border:"none",padding:"8px 20px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:13,marginTop:8}}>+ Adicionar Resposta</button>
+          </div>
+        </Sec>
+      </>}
+
+      {/* Pilares & Tom */}
+      {abaEst==="pilares"&&<>
+        <Sec title="Pilares de conteúdo">
+          <F label="Tópicos que sempre abordamos"><textarea value={est.topicosSempre||form.topicosSempre||""} onChange={e=>updE("topicosSempre",e.target.value)} rows={3} style={{...inp,resize:"vertical",fontFamily:"inherit"}}/></F>
+          <F label="Tópicos que nunca abordamos"><textarea value={est.topicosNunca||form.topicosNunca||""} onChange={e=>updE("topicosNunca",e.target.value)} rows={2} style={{...inp,resize:"vertical",fontFamily:"inherit"}}/></F>
+        </Sec>
+        <Sec title="Tom de voz & estilo">
+          <G2 ch={[
+            <F label="Sentimento da marca"><select value={est.sentimento||form.sentimentoMarca||""} onChange={e=>updE("sentimento",e.target.value)} style={{...inp}}>
+              {["empoderador","acolhedor","divertido","sério","inspirador","educativo","premium","próximo"].map(s=><option key={s}>{s}</option>)}
+            </select></F>,
+            <F label="Melhor formato de conteúdo"><input value={est.melhorConteudo||form.melhorConteudo||""} onChange={e=>updE("melhorConteudo",e.target.value)} placeholder="Ex: Reels educativos, carrosséis" style={{...inp}}/></F>
+          ]}/>
+          <F label="Meta das redes sociais"><input value={est.metaRedes||form.metaRedes||""} onChange={e=>updE("metaRedes",e.target.value)} placeholder="Ex: 10k seguidores em 6 meses" style={{...inp}}/></F>
+        </Sec>
+        <button onClick={save} style={{background:G.primary,color:"#fff",border:"none",padding:"10px 28px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14,boxShadow:`0 4px 18px ${T.primary}30`}}>💾 Salvar Estratégia</button>
+      </>}
+    </>;
+  }
+
+  // ─── AGENDA HUB ───────────────────────────────────────────────────────────
+  function TabAgendaHub(){
+    const agenda=form.agenda||[];
+    const [filtro,setFiltro]=useState("todos");
+    const [expanded,setExpanded]=useState({});
+    const STATUS_CORES={"Rascunho":C.muted,"Ag. aprovação":"#A0C4FF","Alteração":"#E8890C","Aprovado":"#4ADE80","Agendado":"#DDD6FE","Publicado":"#10B981"};
+    const FILTROS=[{id:"todos",label:"Todos"},{id:"aprovacao",label:"Para aprovar"},{id:"agendados",label:"Agendados"},{id:"publicados",label:"Publicados"}];
+
+    const filtrados = agenda.filter(a=>{
+      if(filtro==="aprovacao") return ["Rascunho","Ag. aprovação","Alteração"].includes(a.status);
+      if(filtro==="agendados") return ["Aprovado","Agendado"].includes(a.status);
+      if(filtro==="publicados") return a.status==="Publicado";
+      return true;
+    }).sort((a,b)=>a.data>b.data?1:-1);
+
+    const updS=(id,s)=>upd("agenda",agenda.map(a=>a.id===id?{...a,status:s}:a));
+    const del=(id)=>upd("agenda",agenda.filter(a=>a.id!==id));
+
+    async function sendApprovalWA(it){
+      updS(it.id,"Ag. aprovação");
+      const msg=`🎯 *Aprovação — ${co.name}*\n\n📌 *${it.titulo||"Post"}*\n📅 ${it.data} às ${it.hora||"--:--"}\n📲 ${it.plataforma}\n\n📝 *Legenda:*\n${(it.legenda||"").slice(0,500)}\n\n---\nResponda:\n✅ *APROVAR*\n✏️ *ALTERAR: [comentário]*`;
+      try{
+        const r=await fetch('/api/whatsapp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+        const d=await r.json();
+        if(d.success) flash("✅ Enviado para WhatsApp!","teal");
+        else flash(`⚠️ ${d.error}`,"coral");
+      }catch{ flash("⚠️ Erro ao enviar","coral"); }
+    }
+
+    return <>
+      <div style={{marginBottom:20,padding:"18px 20px",background:G.glow,border:`1px solid ${T.primary}20`,borderRadius:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:44,height:44,borderRadius:12,background:G.primary,display:"flex",alignItems:"center",justifyContent:"center"}}><CalendarClock size={20} color="#fff"/></div>
+          <div>
+            <div style={{fontSize:17,fontWeight:700,background:G.hero,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>Agenda</div>
+            <div style={{fontSize:12,color:C.muted}}>Posts aprovados no fluxo de conteúdo — aguardando publicação ou já publicados</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filtros */}
+      <div style={{display:"flex",gap:8,marginBottom:16}}>
+        {FILTROS.map(f=>(
+          <button key={f.id} onClick={()=>setFiltro(f.id)}
+            style={{background:filtro===f.id?G.primary:"none",color:filtro===f.id?"#fff":C.muted,border:`1px solid ${filtro===f.id?T.primary:C.border}`,padding:"6px 14px",borderRadius:20,cursor:"pointer",fontSize:12,fontWeight:600}}>
+            {f.label} {f.id!=="todos"&&<span style={{opacity:.7}}>({agenda.filter(a=>filtro==="aprovacao"?["Rascunho","Ag. aprovação","Alteração"].includes(a.status):filtro==="agendados"?["Aprovado","Agendado"].includes(a.status):a.status==="Publicado").length})</span>}
+          </button>
+        ))}
+      </div>
+
+      {filtrados.length===0&&<div style={{textAlign:"center",padding:"48px 0",color:C.muted,fontSize:13}}>
+        <div style={{fontSize:32,marginBottom:12}}>📅</div>
+        Nenhum post aqui ainda.<br/>
+        <span style={{fontSize:12}}>Crie conteúdo na aba <strong>Conteúdo</strong> para aparecer aqui após aprovação.</span>
+      </div>}
+
+      {filtrados.map(it=>(
+        <div key={it.id} style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:16,marginBottom:10,position:"relative"}}>
+          <div style={{position:"absolute",top:0,left:0,bottom:0,width:4,background:STATUS_CORES[it.status]||C.border,borderRadius:"14px 0 0 14px"}}/>
+          <div style={{paddingLeft:12}}>
+            {/* Header */}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",marginBottom:4}}>
+                  <span style={{fontSize:12,fontWeight:700,color:C.text}}>{it.titulo||"Post"}</span>
+                  <span style={{background:`${STATUS_CORES[it.status]||C.border}30`,color:STATUS_CORES[it.status]||C.muted,fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10}}>{it.status}</span>
+                  <span style={{fontSize:10,color:C.muted}}>{it.plataforma}</span>
+                </div>
+                <div style={{fontSize:11,color:C.muted}}>{it.data} {it.hora&&`às ${it.hora}`}</div>
+              </div>
+              {it.imagemFinal&&<img src={it.imagemFinal} alt="" style={{width:52,height:52,borderRadius:8,objectFit:"cover",flexShrink:0,marginLeft:10}}/>}
+            </div>
+
+            {/* Legenda colapsável */}
+            {it.legenda&&<div style={{fontSize:12,color:C.text,lineHeight:1.6,marginBottom:10,
+              ...(expanded[it.id]?{}:{overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"})}}>
+              {it.legenda}
+            </div>}
+            {it.legenda?.length>120&&<button onClick={()=>setExpanded(p=>({...p,[it.id]:!p[it.id]}))}
+              style={{background:"none",border:"none",color:T.primary,fontSize:11,cursor:"pointer",padding:"0 0 8px",fontWeight:600}}>
+              {expanded[it.id]?"▲ Ver menos":"▼ Ver mais"}
+            </button>}
+
+            {/* Estratégia embutida */}
+            {it.estrategia&&<div style={{background:`${T.primary}08`,border:`1px solid ${T.primary}15`,borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:11,color:C.muted}}>
+              🎯 <strong style={{color:C.text}}>Estratégia:</strong> {it.estrategia}
+            </div>}
+
+            {/* Ações */}
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {["Rascunho","Alteração"].includes(it.status)&&<button onClick={()=>sendApprovalWA(it)}
+                style={{background:"#25D366",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontSize:11,fontWeight:700,display:"flex",alignItems:"center",gap:4}}>
+                <Send size={11}/> Enviar WA
+              </button>}
+              {it.status==="Ag. aprovação"&&<button onClick={()=>updS(it.id,"Aprovado")}
+                style={{background:"#10b981",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontSize:11,fontWeight:700}}>
+                ✅ Aprovar
+              </button>}
+              {it.status==="Aprovado"&&<button onClick={()=>updS(it.id,"Agendado")}
+                style={{background:G.primary,color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontSize:11,fontWeight:700}}>
+                📅 Agendar
+              </button>}
+              {it.status==="Agendado"&&<button onClick={()=>updS(it.id,"Publicado")}
+                style={{background:"#8B5CF6",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontSize:11,fontWeight:700}}>
+                🚀 Marcar Publicado
+              </button>}
+              <button onClick={()=>del(it.id)}
+                style={{background:"none",border:`1px solid ${C.border}`,color:C.muted,padding:"6px 10px",borderRadius:8,cursor:"pointer",fontSize:11,marginLeft:"auto"}}>
+                <Trash2 size={12}/>
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
     </>;
   }
 
