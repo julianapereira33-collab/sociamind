@@ -52,6 +52,26 @@ export async function getPlans() {
   return data || [];
 }
 
+// ── Integrações ──────────────────────────────────────────────
+
+export async function getIntegrations(orgId) {
+  const { data } = await supabase
+    .from('integrations')
+    .select('platform, credentials')
+    .eq('organization_id', orgId);
+  if (!data) return {};
+  return data.reduce((acc, row) => ({ ...acc, [row.platform]: row.credentials }), {});
+}
+
+export async function saveIntegration(orgId, platform, credentials) {
+  await supabase
+    .from('integrations')
+    .upsert(
+      { organization_id: orgId, platform, credentials, updated_at: new Date().toISOString() },
+      { onConflict: 'organization_id,platform' }
+    );
+}
+
 // ── Uso / limites ────────────────────────────────────────────
 
 export async function checkLimit(orgId, planLimits, resource) {

@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { storage } from "./src/storage.js";
 import { getMode, getTokens, getGradients } from "./src/design.js";
-import { supabase, getOrgData, saveOrgData, getProfile } from "./src/supabase.js";
+import { supabase, getOrgData, saveOrgData, getProfile, getIntegrations, saveIntegration } from "./src/supabase.js";
 import {
   Sparkles, ScanLine, Palette, Package, Users, FileText,
   Calendar, CalendarClock, Smartphone, Plug, Lock,
@@ -754,7 +754,7 @@ export default function App({ session, onSignOut }) {
     const ytHandle = parseHandle(urls.youtube, "youtube");
 
     async function runScan() {
-      const hasInput = Object.values(urls).some(v=>v.trim()) || manual.trim();
+      const hasInput = Object.values(urls).some(v=>v.trim());
       if (!hasInput) return;
       setPhase("scanning"); setLog([]); setResult(null); setEditMode(false); setEditData(null);
 
@@ -1074,13 +1074,6 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
             ))}
           </div>
         }
-        <div style={{marginTop:14}}>
-          <label style={{display:"block",fontSize:11,fontWeight:700,color:"#F5A623",marginBottom:4,textTransform:"uppercase",letterSpacing:.5}}>⭐ Cole aqui o conteúdo real do perfil — Bio, posts, site, produtos (quanto mais info, melhor a análise)</label>
-          <textarea value={manual} onChange={e=>setManual(e.target.value)} rows={5}
-            placeholder={`Cole aqui o máximo de informação real da marca — a IA não acessa a internet:\n\n• Bio completa do Instagram\n• Texto do site (sobre, serviços, produtos)\n• Lista de produtos/serviços com preços\n• Descrição do público que já atende\n• Últimas legendas de posts\n• Qualquer texto que represente a marca`}
-            style={{...inp,resize:"vertical",lineHeight:1.7,fontFamily:"inherit",fontSize:13}} />
-        </div>
-
         <div style={{marginTop:14,display:"flex",gap:10,alignItems:"center"}}>
           <button onClick={runScan} disabled={phase==="scanning"} style={{background:phase==="scanning"?C.surf3:G.primary,color:phase==="scanning"?C.muted:"#fff",border:"none",padding:"11px 28px",borderRadius:10,cursor:phase==="scanning"?"default":"pointer",fontWeight:700,fontSize:14,boxShadow:phase==="scanning"?"none":`0 4px 24px ${T.primary}45`,display:"flex",alignItems:"center",gap:8}}>
             {phase==="scanning" ? <>⏳ Analisando…</> : <>🚀 Analisar com IA</>}
@@ -2814,17 +2807,232 @@ RETORNE APENAS JSON válido, sem texto antes ou depois:
 
   // ─── INTEGRAÇÕES ──────────────────────────────────────────────────────────
   function TabIntegracoes(){
+    const [helpOpen, setHelpOpen]   = useState(null);
+    const [creds, setCreds]         = useState({});
+    const [saving, setSavingInteg]  = useState(null); // platform being saved
+    const [saved2, setSaved2]       = useState({});   // { platform: true }
+    const [loaded, setLoaded]       = useState(false);
+
+    // Carrega do Supabase se autenticado, senão cai no form (localStorage)
+    useEffect(() => {
+      async function load() {
+        if (orgId) {
+          const data = await getIntegrations(orgId);
+          // Merge todas as plataformas num objeto flat de campos
+          const flat = {};
+          Object.values(data).forEach(platform => Object.assign(flat, platform));
+          setCreds(flat);
+          // Sincroniza pro form para o scanner conseguir ler
+          if (Object.keys(flat).length) setForm(p => ({ ...p, ...flat }));
+        } else {
+          // Fallback: pega do form (localStorage)
+          const keys = ['metaAppId','metaSecret','metaPageToken','metaIgId',
+            'zapiInstanceId','zapiToken','zapiClientToken','zapiPhone',
+            'waBaId','waPhoneId','waApiToken',
+            'mcApiKey','mcBotId','mcFlows',
+            'canvaKitId','canvaFolder','n8nWebhook','superAgentesId','driveFolder'];
+          const flat = {};
+          keys.forEach(k => { if (form[k]) flat[k] = form[k]; });
+          setCreds(flat);
+        }
+        setLoaded(true);
+      }
+      load();
+    }, [orgId]);
+
+    function setC(k, v) { setCreds(p => ({ ...p, [k]: v })); }
+
+    async function salvarPlataforma(platform, campos) {
+      setSavingInteg(platform);
+      const platformCreds = {};
+      campos.forEach(k => { platformCreds[k] = creds[k] || ''; });
+      if (orgId) {
+        await saveIntegration(orgId, platform, platformCreds);
+      }
+      // Sempre sincroniza pro form/localStorage como fallback
+      setForm(p => ({ ...p, ...platformCreds }));
+      storage.set(`smvp-${co.id}`, JSON.stringify({ ...form, ...platformCreds }));
+      setSaved2(p => ({ ...p, [platform]: true }));
+      setSavingInteg(null);
+      setTimeout(() => setSaved2(p => ({ ...p, [platform]: false })), 3000);
+    }
+
+    // Campo de input que usa creds local
+    function IC({ k, ph, type="text" }) {
+      return <input type={type} value={creds[k]||""} onChange={e=>setC(k,e.target.value)}
+        placeholder={ph} style={{...inp,fontFamily:"inherit"}} />;
+    }
+    function TAC({ k, ph, rows=3 }) {
+      return <textarea value={creds[k]||""} onChange={e=>setC(k,e.target.value)}
+        placeholder={ph} rows={rows} style={{...inp,resize:"vertical",lineHeight:1.6}} />;
+    }
+
+    function BtnSalvar({ platform, campos }) {
+      const isSaving = saving === platform;
+      const isDone   = saved2[platform];
+      return (
+        <div style={{marginTop:14,display:"flex",justifyContent:"flex-end"}}>
+          <button
+            onClick={() => salvarPlataforma(platform, campos)}
+            disabled={isSaving}
+            style={{background:isDone?"#22C55E20":G.primary,color:isDone?"#22C55E":"#fff",border:isDone?"1px solid #22C55E40":"none",
+              padding:"8px 20px",borderRadius:9,cursor:isSaving?"default":"pointer",fontWeight:700,fontSize:13,
+              display:"flex",alignItems:"center",gap:6,transition:"all .3s"}}
+          >
+            {isSaving ? "Salvando…" : isDone ? "✓ Salvo no banco" : "💾 Salvar"}
+          </button>
+        </div>
+      );
+    }
+
+    if (!loaded) return <div style={{textAlign:"center",padding:40,color:C.muted}}>Carregando integrações…</div>;
+
+    const GUIDES = {
+      meta: {
+        title: "Como conectar Instagram + Facebook",
+        icon: "🔵",
+        cor: "#1877F2",
+        passos: [
+          { n:1, titulo:"Acesse o Meta for Developers", desc:"Entre em developers.facebook.com. Se ainda não tem conta, crie gratuitamente com seu Facebook.", link:"https://developers.facebook.com" },
+          { n:2, titulo:"Crie um App do tipo Empresa", desc:"Clique em 'Meus Apps' → 'Criar App'. Escolha o tipo 'Empresa' e avance até finalizar a criação." },
+          { n:3, titulo:"Copie o App ID e App Secret", desc:"No painel do App, vá em Configurações → Básico. O App ID e a Chave Secreta estão logo no topo da página." },
+          { n:4, titulo:"Gere o Page Access Token", desc:"Acesse Ferramentas → Graph API Explorer. Selecione sua Página no seletor. Clique em 'Gerar Token' e autorize as permissões: pages_manage_posts, instagram_basic, instagram_content_publish." },
+          { n:5, titulo:"Encontre o Instagram Business ID", desc:"No Graph API Explorer, faça a consulta: GET /{id-da-sua-pagina}?fields=instagram_business_account. O número retornado é o seu Instagram Business Account ID." },
+        ]
+      },
+      zapi: {
+        title: "Como configurar o Zapi (WhatsApp)",
+        icon: "🟢",
+        cor: "#25D366",
+        passos: [
+          { n:1, titulo:"Crie uma conta no Zapi", desc:"Acesse app.z-api.io e cadastre-se. O plano gratuito já permite testar.", link:"https://app.z-api.io" },
+          { n:2, titulo:"Crie uma nova instância", desc:"No painel, clique em 'Nova Instância'. Dê um nome (ex: SociaMinD) e confirme a criação." },
+          { n:3, titulo:"Copie o Instance ID e Token", desc:"Dentro da instância, vá na aba 'Token'. Copie o 'Instance ID' e o 'Token' exatamente como aparecem." },
+          { n:4, titulo:"Copie o Client-Token (Segurança)", desc:"No menu superior do painel Zapi, clique em Configurações → Segurança. Copie o 'Security Token'." },
+          { n:5, titulo:"Conecte o WhatsApp", desc:"Ainda na instância, clique em 'Conectar' e escaneie o QR Code com seu WhatsApp. Quando ficar verde, está ativo." },
+        ]
+      },
+      waba: {
+        title: "Como configurar WhatsApp Business API",
+        icon: "🟢",
+        cor: "#25D366",
+        passos: [
+          { n:1, titulo:"Acesse o Meta Business Suite", desc:"Entre em business.facebook.com. É necessário ter uma conta de negócios verificada no Meta.", link:"https://business.facebook.com" },
+          { n:2, titulo:"Adicione o WhatsApp Business", desc:"No menu lateral, vá em Configurações → Contas → Contas do WhatsApp. Clique em 'Adicionar' e siga o processo de verificação do número." },
+          { n:3, titulo:"Copie o WABA ID", desc:"Em Configurações → Contas do WhatsApp, o WABA ID aparece abaixo do nome da conta (formato numérico longo)." },
+          { n:4, titulo:"Copie o Phone Number ID", desc:"Clique na conta do WhatsApp → Números de telefone. O Phone Number ID aparece ao lado do número cadastrado." },
+          { n:5, titulo:"Gere o Access Token", desc:"Acesse developers.facebook.com → seu App → WhatsApp → Configuração de API. Para produção, gere um token permanente em Configurações → Usuários do Sistema." },
+        ]
+      },
+      manychat: {
+        title: "Como obter as credenciais ManyChat",
+        icon: "🟣",
+        cor: "#7B5EA7",
+        passos: [
+          { n:1, titulo:"Acesse o ManyChat", desc:"Entre em manychat.com e faça login na conta do cliente ou da sua agência.", link:"https://manychat.com" },
+          { n:2, titulo:"Vá em Configurações → API", desc:"No menu lateral esquerdo, clique em Configurações (engrenagem) e depois em 'API'." },
+          { n:3, titulo:"Gere a API Key", desc:"Clique em 'Nova API Key', dê um nome (ex: SociaMinD) e copie a chave gerada. Guarde em local seguro — ela só aparece uma vez." },
+          { n:4, titulo:"Encontre o Bot ID", desc:"O Bot ID está na URL do painel do ManyChat. Exemplo: app.manychat.com/fb/123456789 — o número é o Bot ID." },
+          { n:5, titulo:"Liste os fluxos ativos", desc:"Anote os nomes dos fluxos que você usa (ex: Boas-vindas, Carrinho abandonado). Isso ajuda a IA a entender suas automações." },
+        ]
+      },
+      canva: {
+        title: "Como configurar Canva + N8n",
+        icon: "🎨",
+        cor: "#8B5CF6",
+        passos: [
+          { n:1, titulo:"Abra seu Brand Kit no Canva", desc:"Entre em canva.com → Brand Hub → Brand Kit. Abra o kit da empresa. O ID está na URL: canva.com/brand/XXXXXXXX.", link:"https://canva.com" },
+          { n:2, titulo:"Copie o link da pasta de templates", desc:"Na pasta de templates no Canva, clique em '...' → Compartilhar → Copiar link. Cole o link no campo." },
+          { n:3, titulo:"Configure o Webhook no N8n", desc:"No N8n, crie um novo Workflow. Adicione o nó 'Webhook' como trigger. Copie a URL gerada (Production URL) e cole no campo.", link:"https://n8n.io" },
+          { n:4, titulo:"Google Drive — link da pasta", desc:"Abra a pasta do cliente no Google Drive. Clique em Compartilhar → Copiar link. Cole no campo do Google Drive." },
+          { n:5, titulo:"Super Agentes ID", desc:"No painel do Super Agentes, vá em Configurações → seu Agente. O ID está no topo da página ou na URL." },
+        ]
+      },
+    };
+
+    const guia = helpOpen ? GUIDES[helpOpen] : null;
+
+    function SecInteg({ title, accent, helpKey, children }) {
+      return (
+        <div style={{background:C.surf,border:`1px solid ${accent}25`,borderRadius:16,padding:"18px 20px",marginBottom:14}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+            <div style={{fontSize:11,fontWeight:900,letterSpacing:2,color:accent,textTransform:"uppercase"}}>{title}</div>
+            <button
+              onClick={()=>setHelpOpen(helpOpen===helpKey?null:helpKey)}
+              style={{display:"flex",alignItems:"center",gap:5,background:helpOpen===helpKey?`${accent}20`:`${accent}10`,border:`1px solid ${accent}40`,color:accent,borderRadius:8,padding:"5px 12px",cursor:"pointer",fontSize:12,fontWeight:700,transition:"all .2s"}}
+            >
+              {helpOpen===helpKey ? "✕ Fechar guia" : "❓ Como obter"}
+            </button>
+          </div>
+          {children}
+        </div>
+      );
+    }
+
     return <>
-      <InfoBox color="#F5A623">🔒 Tokens armazenados apenas neste dispositivo.</InfoBox>
-      <Sec title="Meta Business — Instagram + Facebook" accent={C.blue}><G2 ch={[<F label="App ID"><I k="metaAppId" ph="000000000000" /></F>,<F label="App Secret"><I k="metaSecret" type="password" ph="••••••••" /></F>]} /><F label="Page Access Token"><TA k="metaPageToken" ph="EAAxxxx…" rows={2} /></F><F label="Instagram Business Account ID"><I k="metaIgId" ph="17841400000" /></F></Sec>
-      <Sec title="Zapi — WhatsApp Automático" accent="#25D366">
-        <InfoBox color="#25D366">O Zapi envia mensagens reais de aprovação de conteúdo via WhatsApp. Obtenha as credenciais em app.z-api.io</InfoBox>
-        <G2 ch={[<F label="Instance ID" req><I k="zapiInstanceId" ph="Ex: 3A1B2C3D4E5F" /></F>,<F label="Token" req><I k="zapiToken" ph="Token da instância" /></F>]} />
-        <G2 ch={[<F label="Client-Token (Security)" req><I k="zapiClientToken" ph="Security Token do painel" /></F>,<F label="Número para aprovação (com DDI)" req><I k="zapiPhone" ph="5514999999999" /></F>]} />
-      </Sec>
-      <Sec title="WhatsApp Business API (Meta)" accent="#25D366"><G2 ch={[<F label="WABA ID"><I k="waBaId" ph="000000000000" /></F>,<F label="Phone Number ID"><I k="waPhoneId" ph="000000000000" /></F>]} /><F label="Access Token"><TA k="waApiToken" ph="EAAxxxx…" rows={2} /></F></Sec>
-      <Sec title="ManyChat" accent={C.purple}><G2 ch={[<F label="API Key"><I k="mcApiKey" type="password" ph="••••••" /></F>,<F label="Bot ID"><I k="mcBotId" ph="0000000" /></F>]} /><F label="Fluxos ativos"><TA k="mcFlows" ph="Boas-vindas, nutrição, respostas…" rows={2} /></F></Sec>
-      <Sec title="Canva + N8n + Super Agentes" accent={C.gold}><G2 ch={[<F label="Brand Kit ID"><I k="canvaKitId" ph="DAFxxxx" /></F>,<F label="Pasta templates"><I k="canvaFolder" ph="https://canva.com/folder/…" /></F>]} /><G2 ch={[<F label="N8n Webhook"><I k="n8nWebhook" ph="https://…/webhook/…" /></F>,<F label="Super Agentes ID"><I k="superAgentesId" ph="agent-xxxx" /></F>]} /><F label="Google Drive"><I k="driveFolder" ph="https://drive.google.com/…" /></F></Sec>
+      <InfoBox color="#F5A623">🔒 Suas credenciais ficam salvas com segurança neste dispositivo e nunca são compartilhadas.</InfoBox>
+
+      {/* Painel de ajuda flutuante */}
+      {guia && (
+        <div style={{position:"fixed",bottom:24,right:24,width:380,maxHeight:"70vh",overflowY:"auto",background:"#0D0F1A",border:`2px solid ${guia.cor}50`,borderRadius:18,boxShadow:`0 8px 48px #00000080,0 0 0 1px ${guia.cor}20`,zIndex:9999,padding:"20px 22px"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:20}}>{guia.icon}</span>
+              <span style={{fontSize:13,fontWeight:800,color:"#fff",lineHeight:1.2}}>{guia.title}</span>
+            </div>
+            <button onClick={()=>setHelpOpen(null)} style={{background:"#ffffff15",border:"none",color:"#fff",borderRadius:8,width:28,height:28,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {guia.passos.map(p=>(
+              <div key={p.n} style={{background:"#ffffff08",border:`1px solid ${guia.cor}20`,borderRadius:12,padding:"12px 14px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                  <div style={{width:22,height:22,borderRadius:"50%",background:guia.cor,color:"#fff",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{p.n}</div>
+                  <span style={{fontSize:12,fontWeight:700,color:"#fff"}}>{p.titulo}</span>
+                </div>
+                <p style={{margin:"0 0 0 30px",fontSize:11,color:"#aaa",lineHeight:1.6}}>{p.desc}</p>
+                {p.link && (
+                  <a href={p.link} target="_blank" rel="noreferrer" style={{display:"inline-block",marginTop:8,marginLeft:30,fontSize:11,color:guia.cor,fontWeight:600,textDecoration:"none",borderBottom:`1px solid ${guia.cor}40`}}>
+                    Abrir → {p.link.replace("https://","").split("/")[0]}
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+          <p style={{margin:"14px 0 0",fontSize:10,color:"#555",textAlign:"center"}}>Deixe este guia aberto enquanto configura</p>
+        </div>
+      )}
+
+      <SecInteg title="Meta Business — Instagram + Facebook" accent={C.blue} helpKey="meta">
+        <G2 ch={[<F label="App ID"><IC k="metaAppId" ph="000000000000" /></F>,<F label="App Secret"><IC k="metaSecret" type="password" ph="••••••••" /></F>]} />
+        <F label="Page Access Token"><TAC k="metaPageToken" ph="EAAxxxx…" rows={2} /></F>
+        <F label="Instagram Business Account ID"><IC k="metaIgId" ph="17841400000" /></F>
+        <BtnSalvar platform="meta" campos={['metaAppId','metaSecret','metaPageToken','metaIgId']} />
+      </SecInteg>
+
+      <SecInteg title="Zapi — WhatsApp Automático" accent="#25D366" helpKey="zapi">
+        <G2 ch={[<F label="Instance ID" req><IC k="zapiInstanceId" ph="Ex: 3A1B2C3D4E5F" /></F>,<F label="Token" req><IC k="zapiToken" ph="Token da instância" /></F>]} />
+        <G2 ch={[<F label="Client-Token (Security)" req><IC k="zapiClientToken" ph="Security Token do painel" /></F>,<F label="Número para aprovação (com DDI)" req><IC k="zapiPhone" ph="5514999999999" /></F>]} />
+        <BtnSalvar platform="zapi" campos={['zapiInstanceId','zapiToken','zapiClientToken','zapiPhone']} />
+      </SecInteg>
+
+      <SecInteg title="WhatsApp Business API (Meta)" accent="#25D366" helpKey="waba">
+        <G2 ch={[<F label="WABA ID"><IC k="waBaId" ph="000000000000" /></F>,<F label="Phone Number ID"><IC k="waPhoneId" ph="000000000000" /></F>]} />
+        <F label="Access Token"><TAC k="waApiToken" ph="EAAxxxx…" rows={2} /></F>
+        <BtnSalvar platform="waba" campos={['waBaId','waPhoneId','waApiToken']} />
+      </SecInteg>
+
+      <SecInteg title="ManyChat" accent={C.purple} helpKey="manychat">
+        <G2 ch={[<F label="API Key"><IC k="mcApiKey" type="password" ph="••••••" /></F>,<F label="Bot ID"><IC k="mcBotId" ph="0000000" /></F>]} />
+        <F label="Fluxos ativos"><TAC k="mcFlows" ph="Boas-vindas, nutrição, respostas…" rows={2} /></F>
+        <BtnSalvar platform="manychat" campos={['mcApiKey','mcBotId','mcFlows']} />
+      </SecInteg>
+
+      <SecInteg title="Canva + N8n + Super Agentes" accent={C.gold} helpKey="canva">
+        <G2 ch={[<F label="Brand Kit ID"><IC k="canvaKitId" ph="DAFxxxx" /></F>,<F label="Pasta templates"><IC k="canvaFolder" ph="https://canva.com/folder/…" /></F>]} />
+        <G2 ch={[<F label="N8n Webhook"><IC k="n8nWebhook" ph="https://…/webhook/…" /></F>,<F label="Super Agentes ID"><IC k="superAgentesId" ph="agent-xxxx" /></F>]} />
+        <F label="Google Drive"><IC k="driveFolder" ph="https://drive.google.com/…" /></F>
+        <BtnSalvar platform="canva" campos={['canvaKitId','canvaFolder','n8nWebhook','superAgentesId','driveFolder']} />
+      </SecInteg>
     </>;
   }
 
