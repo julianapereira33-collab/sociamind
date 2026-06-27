@@ -294,17 +294,8 @@ export default function App({ session, onSignOut }) {
     const r = storage.get(`smvp-${c.id}`);
     if(r) base={...base,...JSON.parse(r.value)};
     setForm(base); setView("company");
-    // Carrega do Supabase em paralelo e mescla (fonte de verdade)
-    if(orgId) {
-      try {
-        const remote = await getOrgData(orgId);
-        if(remote?.data && Object.keys(remote.data).length > 0) {
-          const merged = {...base, ...remote.data};
-          setForm(merged);
-          storage.set(`smvp-${c.id}`, JSON.stringify(merged));
-        }
-      } catch(e) { console.error("Erro ao carregar dados remotos:", e); }
-    }
+    // Supabase tem orgId único por usuário, não por empresa — não mesclar remotamente
+    // para evitar dados de uma empresa sobrescrevendo outra (bug Metamorfose)
   }
 
   async function save() {
@@ -2899,7 +2890,7 @@ RETORNE APENAS JSON válido, sem texto antes ou depois:
         if(!hasData) return null;
         return <div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px",marginBottom:14}}>
           <div style={{fontSize:14,fontWeight:700,color:T.text,marginBottom:16,display:"flex",alignItems:"center",gap:8}}>
-            <Activity size={16} color={co.color}/>Crescimento — Antes & Depois da Metamorfose
+            <Activity size={16} color={co.color}/>Crescimento — Antes & Depois com a IA
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10}}>
             {plats.map(p=>{
@@ -2992,17 +2983,111 @@ RETORNE APENAS JSON válido, sem texto antes ou depois:
           ))}
         </div>
       </div>}
+
+      {/* ── Sugestões da IA ── */}
+      <SugestoesIA agenda={form.agenda||[]} metricas={form.metricas||{}} nomeEmpresa={co.name} cor={co.color}/>
     </>;
+  }
+
+  function SugestoesIA({agenda,metricas,nomeEmpresa,cor}){
+    const [sugestoes,setSugestoes]=useState(null);
+    const [gerando,setGerando]=useState(false);
+
+    async function gerarSugestoes(){
+      setGerando(true);
+      const publicados=agenda.filter(a=>a.status==="Publicado");
+      const tiposPublicados=publicados.reduce((acc,a)=>{acc[a.tipo]=(acc[a.tipo]||0)+1;return acc;},{});
+      const met=Object.entries(metricas).map(([plat,m])=>`${plat}: ${m.seguidores||0} seguidores, ${m.engajamento||0}% engajamento`).join("; ")||"sem métricas registradas";
+      const prompt=`Você é um estrategista de marketing digital especialista em performance de redes sociais. Analise os dados abaixo e gere 4 sugestões práticas e específicas para melhorar os resultados da marca.
+
+EMPRESA: ${nomeEmpresa}
+POSTS PUBLICADOS: ${publicados.length} total — Tipos: ${JSON.stringify(tiposPublicados)}
+MÉTRICAS ATUAIS: ${met}
+
+Retorne APENAS JSON válido:
+[
+  {"titulo":"título curto da sugestão","descricao":"explicação prática de 2 linhas","impacto":"alto|médio|baixo","acao":"texto do botão de ação","emoji":"um emoji"},
+  ...
+]`;
+      try{
+        const r=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1200,messages:[{role:"user",content:prompt}]})});
+        const d=await r.json();
+        if(d.error) throw new Error(JSON.stringify(d.error));
+        const raw=d.content?.find(b=>b.type==="text")?.text||"[]";
+        setSugestoes(JSON.parse(raw.replace(/```json|```/g,"").trim()));
+      }catch(e){setSugestoes([{titulo:"Mantenha consistência na frequência",descricao:"Poste pelo menos 3x por semana no Instagram. Consistência é o fator #1 de crescimento orgânico.",impacto:"alto",acao:"Programar semana",emoji:"📅"},{titulo:"Aposte em Reels e Carrosséis",descricao:"Reels têm alcance 3x maior que posts estáticos. Carrosséis têm maior taxa de salvamento.",impacto:"alto",acao:"Criar Reel",emoji:"🎬"},{titulo:"Responda comentários em até 1h",descricao:"O algoritmo favorece posts com interação rápida. Responder comentários nas primeiras horas é crucial.",impacto:"médio",acao:"Ver mensagens",emoji:"💬"},{titulo:"Adicione CTA em todo post",descricao:"Posts com chamada para ação clara (\"comente X\", \"salve este post\") têm 40% mais engajamento.",impacto:"médio",acao:"Editar conteúdo",emoji:"🎯"}]);}
+      setGerando(false);
+    }
+
+    const impactoCor={alto:"#22C55E",médio:"#F59E0B",baixo:"#94A3B8"};
+
+    return <div style={{background:G.glow,border:`1px solid ${cor}20`,borderRadius:14,padding:"20px",marginTop:14}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:10}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{width:38,height:38,borderRadius:10,background:G.primary,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Sparkles size={18} color="#fff"/></div>
+          <div>
+            <div style={{fontSize:14,fontWeight:700,color:C.text}}>Sugestões da IA</div>
+            <div style={{fontSize:11,color:C.muted}}>Análise inteligente com base nos seus dados</div>
+          </div>
+        </div>
+        <button onClick={gerarSugestoes} disabled={gerando} style={{background:gerando?C.surf3:G.primary,color:gerando?C.muted:"#fff",border:"none",padding:"9px 18px",borderRadius:9,cursor:gerando?"default":"pointer",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",gap:7}}>
+          {gerando?<><RefreshCw size={13} style={{animation:"spin 1s linear infinite"}}/> Analisando…</>:<><Sparkles size={13}/> Analisar com IA</>}
+        </button>
+      </div>
+      {!sugestoes&&!gerando&&<div style={{textAlign:"center",padding:"24px 0",color:C.muted,fontSize:13}}>Clique em "Analisar com IA" para receber sugestões personalizadas baseadas nos seus dados.</div>}
+      {sugestoes&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+        {sugestoes.map((s,i)=>(
+          <div key={i} style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:12,padding:"16px",position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${impactoCor[s.impacto]||"#888"},transparent)`}}/>
+            <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:8}}>
+              <span style={{fontSize:22,flexShrink:0}}>{s.emoji}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:3}}>{s.titulo}</div>
+                <div style={{fontSize:11,color:C.muted,lineHeight:1.6}}>{s.descricao}</div>
+              </div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:8}}>
+              <span style={{fontSize:10,fontWeight:700,color:impactoCor[s.impacto]||"#888",background:`${impactoCor[s.impacto]||"#888"}15`,padding:"2px 8px",borderRadius:20}}>Impacto {s.impacto}</span>
+            </div>
+          </div>
+        ))}
+      </div>}
+    </div>;
   }
 
   // ─── CAMPANHAS ────────────────────────────────────────────────────────────
   function TabCampanhas(){
     const [campanhas, setCampanhas] = useState(form.campanhas||[]);
-    const [view, setView] = useState("lista"); // lista | nova
+    const [view, setView] = useState("lista"); // lista | nova | contatos | frequencia
     const [tipo, setTipo] = useState("whatsapp"); // whatsapp | email | linkedin
     const [nova, setNova] = useState({nome:"",assunto:"",mensagem:"",publico:"todos",agendada:false,dataEnvio:"",horario:"",status:"rascunho"});
     const [sending, setSending] = useState(false);
     const [gerandoMsg, setGerandoMsg] = useState(false);
+    // Contatos
+    const [contatos,setContatos]=useState(form.disparosContatos||[]);
+    const [novoContato,setNovoContato]=useState({nome:"",telefone:"",email:"",lista:""});
+    const [importTexto,setImportTexto]=useState("");
+    const [showImport,setShowImport]=useState(false);
+    // Frequência
+    const [freq,setFreq]=useState(form.disparosFreq||{storys:0,posts:0,reels:0,email:0,whatsapp:0});
+
+    function saveContatos(list){setContatos(list);setForm(p=>({...p,disparosContatos:list}));save();}
+    function addContato(){
+      if(!novoContato.nome.trim()&&!novoContato.telefone.trim()) return;
+      const lista=[...contatos,{id:Date.now(),...novoContato}];
+      saveContatos(lista);
+      setNovoContato({nome:"",telefone:"",email:"",lista:""});
+      flash("✓ Contato adicionado","teal");
+    }
+    function importarContatos(){
+      const linhas=importTexto.trim().split("\n").filter(Boolean);
+      const novos=linhas.map(l=>{const p=l.split(",");return{id:Date.now()+Math.random(),nome:p[0]?.trim()||"",telefone:p[1]?.trim()||"",email:p[2]?.trim()||"",lista:p[3]?.trim()||""};});
+      saveContatos([...contatos,...novos]);
+      setImportTexto(""); setShowImport(false);
+      flash(`✓ ${novos.length} contatos importados`,"teal");
+    }
+    function saveFreq(k,v){const upd={...freq,[k]:Number(v)};setFreq(upd);setForm(p=>({...p,disparosFreq:upd}));}
+
 
     async function gerarMensagemIA(){
       if(!nova.nome) return;
@@ -3085,26 +3170,33 @@ Retorne APENAS o texto do post LinkedIn pronto para publicar. Máximo 1.300 cara
       {/* Header */}
       <div style={{marginBottom:16,padding:"20px 22px",background:G.glow,border:`1px solid ${T.primary}20`,borderRadius:16,position:"relative",overflow:"hidden"}}>
         <div style={{position:"absolute",top:-30,right:-30,width:120,height:120,background:`radial-gradient(circle,${T.primary}18,transparent 70%)`}} />
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
           <div style={{display:"flex",alignItems:"center",gap:14}}>
             <div style={{width:48,height:48,borderRadius:12,background:G.primary,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Megaphone size={22} color="#fff" strokeWidth={2}/></div>
             <div>
-              <div style={{fontSize:18,fontWeight:700,background:G.hero,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>Central de Campanhas</div>
-              <div style={{fontSize:12,color:C.muted,marginTop:2}}>Crie e gerencie disparos de WhatsApp, e-mail e LinkedIn em um só lugar.</div>
+              <div style={{fontSize:18,fontWeight:700,background:G.hero,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>Disparos</div>
+              <div style={{fontSize:12,color:C.muted,marginTop:2}}>Campanhas WhatsApp · E-mail · LinkedIn · Lista de contatos · Frequência</div>
             </div>
           </div>
-          {view==="lista"&&<button onClick={()=>setView("nova")} style={{background:G.primary,color:"#fff",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",gap:6,flexShrink:0}}><Plus size={14}/> Nova Campanha</button>}
-          {view==="nova"&&<button onClick={()=>setView("lista")} style={{background:C.surf3,color:C.text,border:`1px solid ${C.border}`,padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13,display:"flex",alignItems:"center",gap:6,flexShrink:0}}><X size={14}/> Cancelar</button>}
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {["lista","contatos","frequencia"].map(v2=>(
+              <button key={v2} onClick={()=>setView(v2)} style={{padding:"7px 14px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:view===v2?700:500,border:`1px solid ${view===v2?T.primary:C.border2}`,background:view===v2?`${T.primary}20`:C.surf3,color:view===v2?T.primaryL:C.muted}}>
+                {v2==="lista"?"📢 Campanhas":v2==="contatos"?"👥 Contatos":"⚙️ Frequência"}
+              </button>
+            ))}
+            {view==="lista"&&<button onClick={()=>setView("nova")} style={{background:G.primary,color:"#fff",border:"none",padding:"7px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,display:"flex",alignItems:"center",gap:5}}><Plus size={13}/> Nova</button>}
+            {view==="nova"&&<button onClick={()=>setView("lista")} style={{background:"#FF444415",color:"#FF7070",border:"1px solid #FF444430",padding:"7px 12px",borderRadius:8,cursor:"pointer",fontSize:12}}><X size={13}/></button>}
+          </div>
         </div>
       </div>
 
-      {/* Métricas rápidas */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
+      {/* Métricas rápidas — só na lista */}
+      {(view==="lista"||view==="nova")&&<div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
         {[
           ["Total",campanhas.length,"📊"],
           ["Enviadas",campanhas.filter(c=>c.status==="enviada").length,"✅"],
           ["Agendadas",campanhas.filter(c=>c.status==="agendada").length,"📅"],
-          ["Rascunhos",campanhas.filter(c=>c.status==="rascunho").length,"📝"],
+          ["Contatos",contatos.length,"👥"],
         ].map(([l,v,i])=>(
           <div key={l} style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
             <div style={{fontSize:22,marginBottom:4}}>{i}</div>
@@ -3112,7 +3204,82 @@ Retorne APENAS o texto do post LinkedIn pronto para publicar. Máximo 1.300 cara
             <div style={{fontSize:11,color:C.muted}}>{l}</div>
           </div>
         ))}
-      </div>
+      </div>}
+
+      {/* ── VIEW: CONTATOS ── */}
+      {view==="contatos"&&<>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:10}}>
+          <div style={{fontSize:13,color:C.muted}}>{contatos.length} contato(s) cadastrado(s)</div>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>setShowImport(!showImport)} style={{background:C.surf3,color:C.text,border:`1px solid ${C.border}`,padding:"7px 14px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:5}}><Upload size={12}/> Importar CSV</button>
+          </div>
+        </div>
+        {showImport&&<div style={{background:C.surf,border:`1px solid ${T.primary}20`,borderRadius:13,padding:"18px",marginBottom:14}}>
+          <div style={{fontSize:12,color:C.muted,marginBottom:8}}>Cole uma linha por contato: <strong>Nome, Telefone, Email, Lista</strong></div>
+          <textarea value={importTexto} onChange={e=>setImportTexto(e.target.value)} rows={5} placeholder={"João Silva, +5511999990000, joao@email.com, Leads\nMaria Santos, +5511888880000, maria@email.com, Clientes"} style={{...inp,resize:"vertical",lineHeight:1.6,fontFamily:"monospace",fontSize:12}} />
+          <div style={{display:"flex",gap:8,marginTop:10}}>
+            <button onClick={importarContatos} disabled={!importTexto.trim()} style={{background:importTexto.trim()?G.primary:C.surf3,color:importTexto.trim()?"#fff":C.muted,border:"none",padding:"8px 20px",borderRadius:8,cursor:importTexto.trim()?"pointer":"default",fontWeight:700,fontSize:13}}>✓ Importar</button>
+            <button onClick={()=>{setShowImport(false);setImportTexto("");}} style={{background:"none",border:`1px solid ${C.border2}`,color:C.muted,padding:"8px 14px",borderRadius:8,cursor:"pointer",fontSize:12}}>Cancelar</button>
+          </div>
+        </div>}
+        {/* Adicionar contato manual */}
+        <div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:13,padding:"16px",marginBottom:14}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:1,textTransform:"uppercase",marginBottom:12}}>Adicionar Contato</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+            <F label="Nome"><input value={novoContato.nome} onChange={e=>setNovoContato(p=>({...p,nome:e.target.value}))} placeholder="Nome completo" style={{...inp,fontFamily:"inherit"}} /></F>
+            <F label="Telefone (WhatsApp)"><input value={novoContato.telefone} onChange={e=>setNovoContato(p=>({...p,telefone:e.target.value}))} placeholder="+55 11 99999-0000" style={{...inp,fontFamily:"inherit"}} /></F>
+            <F label="E-mail"><input value={novoContato.email} onChange={e=>setNovoContato(p=>({...p,email:e.target.value}))} placeholder="email@exemplo.com" style={{...inp,fontFamily:"inherit"}} /></F>
+            <F label="Lista / Segmento"><input value={novoContato.lista} onChange={e=>setNovoContato(p=>({...p,lista:e.target.value}))} placeholder="Ex: Leads, Clientes, VIP" style={{...inp,fontFamily:"inherit"}} /></F>
+          </div>
+          <button onClick={addContato} disabled={!novoContato.nome.trim()&&!novoContato.telefone.trim()} style={{background:G.primary,color:"#fff",border:"none",padding:"9px 22px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13}}>+ Adicionar</button>
+        </div>
+        {/* Lista */}
+        {contatos.length===0
+          ?<div style={{textAlign:"center",padding:"40px 0",color:C.muted,fontSize:13}}>Nenhum contato cadastrado ainda. Adicione manualmente ou importe um CSV.</div>
+          :<div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {contatos.map(c=>(
+              <div key={c.id} style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"center",gap:10}}>
+                <div style={{width:36,height:36,borderRadius:"50%",background:`${T.primary}20`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:T.primaryL,flexShrink:0}}>{c.nome?.charAt(0)||"?"}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:600,fontSize:13,color:C.text}}>{c.nome||"—"}</div>
+                  <div style={{fontSize:11,color:C.muted}}>{c.telefone}{c.email&&` · ${c.email}`}{c.lista&&<span style={{marginLeft:6,background:`${T.primary}15`,color:T.primaryL,padding:"1px 7px",borderRadius:10,fontSize:10,fontWeight:700}}>{c.lista}</span>}</div>
+                </div>
+                <button onClick={()=>saveContatos(contatos.filter(x=>x.id!==c.id))} style={{background:"#FF444415",border:"1px solid #FF444430",color:"#FF7070",padding:"4px 10px",borderRadius:7,cursor:"pointer",fontSize:11}}><Trash2 size={11}/></button>
+              </div>
+            ))}
+          </div>
+        }
+      </>}
+
+      {/* ── VIEW: FREQUÊNCIA ── */}
+      {view==="frequencia"&&<div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"20px"}}>
+        <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:4}}>Frequência Semanal de Conteúdo</div>
+        <div style={{fontSize:12,color:C.muted,marginBottom:20}}>Configure quantos posts de cada tipo você quer por semana. A IA respeitará essa frequência ao programar o conteúdo.</div>
+        {[
+          {k:"storys",label:"Stories",icon:"📖",desc:"Publicados no Instagram/Facebook Stories"},
+          {k:"posts",label:"Posts Feed",icon:"🖼",desc:"Posts estáticos ou carrosséis no feed"},
+          {k:"reels",label:"Reels / TikTok",icon:"🎬",desc:"Vídeos curtos verticais"},
+          {k:"email",label:"E-mails",icon:"📧",desc:"Disparos por e-mail para a lista"},
+          {k:"whatsapp",label:"WhatsApp",icon:"🟢",desc:"Disparos e campanhas via WhatsApp"},
+        ].map(({k,label,icon,desc})=>(
+          <div key={k} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 0",borderBottom:`1px solid ${C.border2}`}}>
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <span style={{fontSize:24}}>{icon}</span>
+              <div>
+                <div style={{fontSize:13,fontWeight:600,color:C.text}}>{label}</div>
+                <div style={{fontSize:11,color:C.muted}}>{desc}</div>
+              </div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <button onClick={()=>saveFreq(k,Math.max(0,(freq[k]||0)-1))} style={{width:30,height:30,borderRadius:"50%",border:`1px solid ${C.border2}`,background:C.surf3,cursor:"pointer",fontSize:16,color:C.text,display:"flex",alignItems:"center",justifyContent:"center"}}>−</button>
+              <div style={{width:40,textAlign:"center",fontSize:20,fontWeight:800,color:T.primaryL}}>{freq[k]||0}</div>
+              <button onClick={()=>saveFreq(k,(freq[k]||0)+1)} style={{width:30,height:30,borderRadius:"50%",border:`1px solid ${T.primary}`,background:`${T.primary}20`,cursor:"pointer",fontSize:16,color:T.primaryL,display:"flex",alignItems:"center",justifyContent:"center"}}>+</button>
+              <div style={{fontSize:11,color:C.muted,width:48}}>por sem.</div>
+            </div>
+          </div>
+        ))}
+        <button onClick={()=>{setForm(p=>({...p,disparosFreq:freq}));save();flash("✓ Frequência salva","teal");}} style={{marginTop:16,background:G.primary,color:"#fff",border:"none",padding:"10px 24px",borderRadius:9,cursor:"pointer",fontWeight:700,fontSize:13}}>💾 Salvar Frequência</button>
+      </div>}
 
       {view==="lista"&&<>
         {campanhas.length===0
@@ -3245,9 +3412,24 @@ Retorne APENAS o texto do post LinkedIn pronto para publicar. Máximo 1.300 cara
     const [regras, setRegras] = useState(form.msgRegras || []);
     const [novaChave, setNovaChave] = useState("");
     const [novaResp, setNovaResp] = useState("");
+    const [msgSel, setMsgSel] = useState(null);
+    const [replyTxt, setReplyTxt] = useState("");
+    const [autoIA, setAutoIA] = useState(form.autoIAMensagens ?? true);
+    const [enviandoReply, setEnviandoReply] = useState(false);
 
     const temZapi = !!(form.zapiInstanceId || form.zapiPhone);
     const temMeta = !!(form.metaPageToken);
+
+    async function enviarResposta(){
+      if(!replyTxt.trim()||!msgSel) return;
+      setEnviandoReply(true);
+      if(canal==="whatsapp"&&temZapi){
+        try{ await fetch("/api/whatsapp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:`${replyTxt}`,to:msgSel.telefone||""})}); }catch{}
+      }
+      flash(`✓ Resposta enviada para ${msgSel.de}`,"teal");
+      setReplyTxt(""); setMsgSel(null); setEnviandoReply(false);
+    }
+    function toggleAutoIA(){const v=!autoIA;setAutoIA(v);upd("autoIAMensagens",v);flash(v?"🤖 Automação IA ativada":"✋ Automação pausada — você está no controle","teal");}
 
     function addRegra(){
       if(!novaChave.trim()||!novaResp.trim()) return;
@@ -3309,6 +3491,18 @@ Retorne APENAS o texto do post LinkedIn pronto para publicar. Máximo 1.300 cara
         ))}
       </div>
 
+      {/* Controle de automação IA */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:C.surf,border:`1px solid ${autoIA?T.primary+"30":C.border}`,borderRadius:12,padding:"12px 16px",marginBottom:14}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:20}}>{autoIA?"🤖":"✋"}</span>
+          <div>
+            <div style={{fontSize:13,fontWeight:700,color:C.text}}>Automação IA {autoIA?"Ativa":"Pausada"}</div>
+            <div style={{fontSize:11,color:C.muted}}>{autoIA?"A IA responde automaticamente com base nas regras abaixo":"Você responde manualmente — clique em uma mensagem para responder"}</div>
+          </div>
+        </div>
+        <Toggle val={autoIA} onChange={toggleAutoIA} label={autoIA?"Desativar":"Ativar"}/>
+      </div>
+
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
         {/* Inbox */}
         <div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"16px 18px"}}>
@@ -3319,8 +3513,8 @@ Retorne APENAS o texto do post LinkedIn pronto para publicar. Máximo 1.300 cara
           {msgsFiltradas.length===0
             ? <div style={{textAlign:"center",padding:"30px 0",color:C.muted,fontSize:13}}>Nenhuma mensagem neste canal ainda</div>
             : msgsFiltradas.map(m=>(
-              <div key={m.id} style={{display:"flex",gap:10,padding:"10px 0",borderBottom:`1px solid ${C.border2}`,alignItems:"flex-start"}}>
-                <div style={{width:36,height:36,borderRadius:"50%",background:m.lida?C.surf3:G.primary,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#fff",flexShrink:0}}>{m.avatar}</div>
+              <div key={m.id} onClick={()=>setMsgSel(msgSel?.id===m.id?null:m)} style={{display:"flex",gap:10,padding:"10px",borderRadius:10,marginBottom:4,alignItems:"flex-start",cursor:"pointer",background:msgSel?.id===m.id?`${T.primary}12`:C.surf3,border:`1px solid ${msgSel?.id===m.id?T.primary+"40":"transparent"}`,transition:"all .12s"}}>
+                <div style={{width:36,height:36,borderRadius:"50%",background:m.lida?C.surf2:G.primary,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#fff",flexShrink:0}}>{m.avatar}</div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}>
                     <span style={{fontSize:13,fontWeight:m.lida?500:700,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.de}</span>
@@ -3332,6 +3526,15 @@ Retorne APENAS o texto do post LinkedIn pronto para publicar. Máximo 1.300 cara
               </div>
             ))
           }
+          {/* Caixa de resposta manual */}
+          {msgSel&&<div style={{marginTop:12,background:`${T.primary}08`,border:`1px solid ${T.primary}25`,borderRadius:11,padding:"12px"}}>
+            <div style={{fontSize:11,fontWeight:700,color:T.primaryL,marginBottom:6}}>Responder → {msgSel.de}</div>
+            <textarea value={replyTxt} onChange={e=>setReplyTxt(e.target.value)} rows={3} placeholder="Digite sua resposta..." style={{...inp,resize:"none",fontFamily:"inherit",fontSize:13,lineHeight:1.5,marginBottom:8}} />
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={enviarResposta} disabled={!replyTxt.trim()||enviandoReply} style={{background:replyTxt.trim()?G.primary:C.surf3,color:replyTxt.trim()?"#fff":C.muted,border:"none",padding:"8px 18px",borderRadius:8,cursor:replyTxt.trim()?"pointer":"default",fontWeight:700,fontSize:12,display:"flex",alignItems:"center",gap:5}}><Send size={12}/> {enviandoReply?"Enviando…":"Enviar"}</button>
+              <button onClick={()=>{setMsgSel(null);setReplyTxt("");}} style={{background:"none",border:`1px solid ${C.border2}`,color:C.muted,padding:"8px 12px",borderRadius:8,cursor:"pointer",fontSize:12}}>Cancelar</button>
+            </div>
+          </div>}
           <div style={{marginTop:12,padding:"10px 14px",background:`${T.primary}10`,border:`1px solid ${T.primary}20`,borderRadius:10,fontSize:12,color:C.muted,textAlign:"center"}}>
             {CANAIS.find(c=>c.id===canal)?.ativo
               ? "🔄 Mensagens em tempo real quando integração estiver ativa"
