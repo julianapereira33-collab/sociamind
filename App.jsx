@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useMemo } from "react";
+﻿import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { storage } from "./src/storage.js";
 import { getMode, getTokens, getGradients } from "./src/design.js";
 import { supabase, getOrgData, saveOrgData, getProfile } from "./src/supabase.js";
@@ -216,8 +216,36 @@ const TABS = [
   {id:"ajuda",       Icon:HelpCircle,      label:"Ajuda"},
 ];
 
+// ─── Stable Tab wrappers (módulo-level = referência estável entre re-renders) ──
+const _c = {};
+function _TabGerar(p){ return _c.TabGerar(p); }
+function _TabScanner(p){ return _c.TabScanner(p); }
+function _TabIdentidade(p){ return _c.TabIdentidade(p); }
+function _TabProdutos(p){ return _c.TabProdutos(p); }
+function _TabPublicos(p){ return _c.TabPublicos(p); }
+function _TabRedes(p){ return _c.TabRedes(p); }
+function _TabEstrategia(p){ return _c.TabEstrategia(p); }
+function _TabAgendaHub(p){ return _c.TabAgendaHub(p); }
+function _TabConteudo(p){ return _c.TabConteudo(p); }
+function _TabIntegracoes(p){ return _c.TabIntegracoes(p); }
+function _TabResultados(p){ return _c.TabResultados(p); }
+function _SugestoesIA(p){ return _c.SugestoesIA(p); }
+function _TabCampanhas(p){ return _c.TabCampanhas(p); }
+function _TabMensagens(p){ return _c.TabMensagens(p); }
+function _TabAprovacoes(p){ return _c.TabAprovacoes(p); }
+function _TabCofre(p){ return _c.TabCofre(p); }
+function _TabAjuda(p){ return _c.TabAjuda(p); }
+
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function App({ session, onSignOut }) {
+  // Atualiza _c com as funções hoistadas atuais a cada render (closures sempre frescas)
+  _c.TabGerar=TabGerar; _c.TabScanner=TabScanner; _c.TabIdentidade=TabIdentidade;
+  _c.TabProdutos=TabProdutos; _c.TabPublicos=TabPublicos; _c.TabRedes=TabRedes;
+  _c.TabEstrategia=TabEstrategia; _c.TabAgendaHub=TabAgendaHub; _c.TabConteudo=TabConteudo;
+  _c.TabIntegracoes=TabIntegracoes; _c.TabResultados=TabResultados; _c.TabCampanhas=TabCampanhas;
+  _c.TabMensagens=TabMensagens; _c.TabAprovacoes=TabAprovacoes; _c.TabCofre=TabCofre;
+  _c.TabAjuda=TabAjuda; _c.SugestoesIA=SugestoesIA;
+
   const [view,      setView]     = useState("login");
   const [companies, setCompanies]= useState(DEFAULT_COMPANIES);
   const [co,        setCo]       = useState(null);
@@ -326,21 +354,22 @@ export default function App({ session, onSignOut }) {
   }
 
   function flash(msg,type="teal"){ setToast({msg,type}); setTimeout(()=>setToast(null),2800); }
-  const upd=(k,v)=>setForm(p=>({...p,[k]:v}));
-  const toggleArr=(k,v)=>setForm(p=>({...p,[k]:(p[k]||[]).includes(v)?p[k].filter(x=>x!==v):[...(p[k]||[]),v]}));
+  const upd=useCallback((k,v)=>setForm(p=>({...p,[k]:v})),[]);
+  const toggleArr=useCallback((k,v)=>setForm(p=>({...p,[k]:(p[k]||[]).includes(v)?p[k].filter(x=>x!==v):[...(p[k]||[]),v]})),[]);
   async function handleImg(field,file){ const r=new FileReader(); r.onload=e=>upd(field,e.target.result); r.readAsDataURL(file); }
+  const formRef=useRef(form); formRef.current=form;
 
-  // ── Primitives ──────────────────────────────────────────────────────────────
-  function F({label,help,req,children}){ return <div style={{marginBottom:14}}><label style={{display:"block",fontSize:11,fontWeight:700,color:C.muted,marginBottom:4,letterSpacing:.5,textTransform:"uppercase"}}>{label}{req&&<span style={{color:T.primaryXL}}> *</span>}</label>{help&&<p style={{margin:"0 0 5px",fontSize:11,color:C.hint,lineHeight:1.4}}>{help}</p>}{children}</div>; }
-  function I({k,ph,type="text"}){ return <input type={type} value={form[k]||""} onChange={e=>upd(k,e.target.value)} placeholder={ph} style={{...inp,fontFamily:"inherit"}} />; }
-  function TA({k,ph,rows=3}){ return <textarea value={form[k]||""} onChange={e=>upd(k,e.target.value)} placeholder={ph} rows={rows} style={{...inp,resize:"vertical",lineHeight:1.6}} />; }
-  function Sel({k,opts}){ return <select value={form[k]||""} onChange={e=>upd(k,e.target.value)} style={{...inp,cursor:"pointer"}}><option value="">Selecionar…</option>{opts.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select>; }
-  function G2({ch}){ return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>{ch}</div>; }
-  function G3({ch}){ return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>{ch}</div>; }
-  function Sec({title,accent,children}){ const ac=accent||T.primaryXL; return <div style={{marginBottom:22}}><div style={{fontSize:9,fontWeight:900,letterSpacing:3,background:accent?`linear-gradient(90deg,${accent},${T.primaryXL},#FFFFFF)`:G.hero,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",marginBottom:10,textTransform:"uppercase",display:"flex",alignItems:"center",gap:8}}><div style={{height:1,width:16,background:ac,opacity:.6,flexShrink:0}} />{title}<div style={{height:1,flex:1,background:`linear-gradient(90deg,${ac},transparent)`,opacity:.25}} /></div><div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px"}}>{children}</div></div>; }
-  function Badge({color,bg,children}){ return <span style={{fontSize:10,fontWeight:700,padding:"3px 9px",borderRadius:20,background:bg||color+"20",color,border:`1px solid ${color}30`}}>{children}</span>; }
-  function Toggle({val,onChange,label}){ return <div onClick={()=>onChange(!val)} style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer",userSelect:"none"}}><div style={{width:38,height:20,borderRadius:10,background:val?`linear-gradient(90deg,${T.primary},${T.primaryL})`:C.border2,transition:"background .2s",position:"relative",boxShadow:val?T.glowBox:"none"}}><div style={{width:16,height:16,borderRadius:"50%",background:"#FFFFFF",position:"absolute",top:2,left:val?20:2,transition:"left .2s"}} /></div><span style={{fontSize:12,color:val?T.primaryXL:C.muted}}>{label}</span></div>; }
-  function InfoBox({color,children}){ const c=color||T.primaryL; return <div style={{background:`radial-gradient(ellipse at 0% 50%,${c}08,transparent 70%)`,border:`1px solid ${c}20`,borderRadius:10,padding:"11px 15px",marginBottom:16,fontSize:12,color:C.muted,lineHeight:1.5}}>{children}</div>; }
+  // ── Primitives (useCallback = referência estável — corrige perda de foco ao digitar) ─
+  const F=useCallback(({label,help,req,children})=><div style={{marginBottom:14}}><label style={{display:"block",fontSize:11,fontWeight:700,color:C.muted,marginBottom:4,letterSpacing:.5,textTransform:"uppercase"}}>{label}{req&&<span style={{color:T.primaryXL}}> *</span>}</label>{help&&<p style={{margin:"0 0 5px",fontSize:11,color:C.hint,lineHeight:1.4}}>{help}</p>}{children}</div>,[C.muted,T.primaryXL,C.hint]);
+  const I=useCallback(({k,ph,type="text"})=><input type={type} value={formRef.current[k]||""} onChange={e=>upd(k,e.target.value)} placeholder={ph} style={{...inp,fontFamily:"inherit"}}/>,[upd,inp]);
+  const TA=useCallback(({k,ph,rows=3})=><textarea value={formRef.current[k]||""} onChange={e=>upd(k,e.target.value)} placeholder={ph} rows={rows} style={{...inp,resize:"vertical",lineHeight:1.6}}/>,[upd,inp]);
+  const Sel=useCallback(({k,opts})=><select value={formRef.current[k]||""} onChange={e=>upd(k,e.target.value)} style={{...inp,cursor:"pointer"}}><option value="">Selecionar…</option>{opts.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select>,[upd,inp]);
+  const G2=useCallback(({ch})=><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>{ch}</div>,[]);
+  const G3=useCallback(({ch})=><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>{ch}</div>,[]);
+  const Sec=useCallback(({title,accent,children})=>{ const ac=accent||T.primaryXL; return <div style={{marginBottom:22}}><div style={{fontSize:9,fontWeight:900,letterSpacing:3,background:accent?`linear-gradient(90deg,${accent},${T.primaryXL},#FFFFFF)`:G.hero,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text",marginBottom:10,textTransform:"uppercase",display:"flex",alignItems:"center",gap:8}}><div style={{height:1,width:16,background:ac,opacity:.6,flexShrink:0}} />{title}<div style={{height:1,flex:1,background:`linear-gradient(90deg,${ac},transparent)`,opacity:.25}} /></div><div style={{background:C.surf,border:`1px solid ${C.border}`,borderRadius:14,padding:"18px 20px"}}>{children}</div></div>; },[C,T,G]);
+  const Badge=useCallback(({color,bg,children})=><span style={{fontSize:10,fontWeight:700,padding:"3px 9px",borderRadius:20,background:bg||color+"20",color,border:`1px solid ${color}30`}}>{children}</span>,[]);
+  const Toggle=useCallback(({val,onChange,label})=><div onClick={()=>onChange(!val)} style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer",userSelect:"none"}}><div style={{width:38,height:20,borderRadius:10,background:val?`linear-gradient(90deg,${T.primary},${T.primaryL})`:C.border2,transition:"background .2s",position:"relative",boxShadow:val?T.glowBox:"none"}}><div style={{width:16,height:16,borderRadius:"50%",background:"#FFFFFF",position:"absolute",top:2,left:val?20:2,transition:"left .2s"}} /></div><span style={{fontSize:12,color:val?T.primaryXL:C.muted}}>{label}</span></div>,[T,C]);
+  const InfoBox=useCallback(({color,children})=>{ const c=color||T.primaryL; return <div style={{background:`radial-gradient(ellipse at 0% 50%,${c}08,transparent 70%)`,border:`1px solid ${c}20`,borderRadius:10,padding:"11px 15px",marginBottom:16,fontSize:12,color:C.muted,lineHeight:1.5}}>{children}</div>; },[C,T]);
   function ImgUpload({k,label,circle=false,size=88}){
     const ref=useRef();
     return <div><div onClick={()=>ref.current.click()} style={{width:size,height:size,borderRadius:circle?"50%":12,background:C.surf3,border:`2px dashed ${form[k]?co.color+"70":C.border2}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",overflow:"hidden",position:"relative"}}>
@@ -348,10 +377,7 @@ export default function App({ session, onSignOut }) {
       {form[k]&&<div onClick={e=>{e.stopPropagation();upd(k,"");}} style={{position:"absolute",top:4,right:4,background:"#EF444490",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",cursor:"pointer"}}>✕</div>}
     </div><input ref={ref} type="file" accept="image/*" style={{display:"none"}} onChange={e=>e.target.files[0]&&handleImg(k,e.target.files[0])} /></div>;
   }
-  function Chips({k,opts,accent}){
-    const val=form[k]||[];
-    return <div style={{display:"flex",flexWrap:"wrap",gap:7}}>{opts.map(([v,l])=>{const on=val.includes(v);const ac=accent||co?.color||T.primaryXL;return <button key={v} onClick={()=>toggleArr(k,v)} style={{padding:"5px 14px",borderRadius:20,cursor:"pointer",fontSize:12,border:`1px solid ${on?ac+"80":C.border2}`,background:on?ac+"18":C.surf3,color:on?ac:C.muted,fontWeight:on?700:400,transition:"all .12s"}}>{l}</button>;})}</div>;
-  }
+  const Chips=useCallback(({k,opts,accent})=>{ const val=formRef.current[k]||[]; const ac=accent||co?.color||T.primaryXL; return <div style={{display:"flex",flexWrap:"wrap",gap:7}}>{opts.map(([v,l])=>{ const on=val.includes(v); return <button key={v} onClick={()=>toggleArr(k,v)} style={{padding:"5px 14px",borderRadius:20,cursor:"pointer",fontSize:12,border:`1px solid ${on?ac+"80":C.border2}`,background:on?ac+"18":C.surf3,color:on?ac:C.muted,fontWeight:on?700:400,transition:"all .12s"}}>{l}</button>; })}</div>; },[toggleArr,C,T,co]);
 
   // ─── LOGIN ────────────────────────────────────────────────────────────────
   if(view==="login") return <LoginScreen onLogin={()=>{ storage.set("sociamind-session","1"); setLoggedIn(true); setView("home"); }} />;
@@ -525,20 +551,20 @@ export default function App({ session, onSignOut }) {
       {/* Content */}
       <div style={{flex:1,overflowY:"auto",padding:"24px 22px"}}>
         <div style={{maxWidth:820,margin:"0 auto"}}>
-          {tab==="scanner"     &&<TabScanner />}
-          {tab==="resultados"  &&<TabResultados />}
-          {tab==="identidade"  &&<TabIdentidade />}
-          {tab==="produtos"    &&<TabProdutos />}
-          {tab==="publicos"    &&<TabPublicos />}
-          {tab==="redes"       &&<TabRedes />}
-          {tab==="estrategia"  &&<TabEstrategia />}
-          {tab==="conteudo"    &&<TabConteudo />}
-          {tab==="agenda"      &&<TabAgendaHub />}
-          {tab==="disparos"    &&<TabCampanhas />}
-          {tab==="mensagens"   &&<TabMensagens />}
-          {tab==="integracoes" &&<TabIntegracoes />}
-          {tab==="cofre"       &&<TabCofre />}
-          {tab==="ajuda"       &&<TabAjuda />}
+          {tab==="scanner"     &&<_TabScanner />}
+          {tab==="resultados"  &&<_TabResultados />}
+          {tab==="identidade"  &&<_TabIdentidade />}
+          {tab==="produtos"    &&<_TabProdutos />}
+          {tab==="publicos"    &&<_TabPublicos />}
+          {tab==="redes"       &&<_TabRedes />}
+          {tab==="estrategia"  &&<_TabEstrategia />}
+          {tab==="conteudo"    &&<_TabConteudo />}
+          {tab==="agenda"      &&<_TabAgendaHub />}
+          {tab==="disparos"    &&<_TabCampanhas />}
+          {tab==="mensagens"   &&<_TabMensagens />}
+          {tab==="integracoes" &&<_TabIntegracoes />}
+          {tab==="cofre"       &&<_TabCofre />}
+          {tab==="ajuda"       &&<_TabAjuda />}
         </div>
       </div>
     </div>
@@ -2985,7 +3011,7 @@ RETORNE APENAS JSON válido, sem texto antes ou depois:
       </div>}
 
       {/* ── Sugestões da IA ── */}
-      <SugestoesIA agenda={form.agenda||[]} metricas={form.metricas||{}} nomeEmpresa={co.name} cor={co.color}/>
+      <_SugestoesIA agenda={form.agenda||[]} metricas={form.metricas||{}} nomeEmpresa={co.name} cor={co.color}/>
     </>;
   }
 
