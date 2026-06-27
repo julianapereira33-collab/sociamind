@@ -2807,25 +2807,21 @@ RETORNE APENAS JSON válido, sem texto antes ou depois:
 
   // ─── INTEGRAÇÕES ──────────────────────────────────────────────────────────
   function TabIntegracoes(){
-    const [helpOpen, setHelpOpen]   = useState(null);
-    const [creds, setCreds]         = useState({});
-    const [saving, setSavingInteg]  = useState(null); // platform being saved
-    const [saved2, setSaved2]       = useState({});   // { platform: true }
-    const [loaded, setLoaded]       = useState(false);
+    const [painel, setPainel] = useState(null); // platform com painel aberto
+    const [creds, setCreds]   = useState({});
+    const [savingP, setSavingP] = useState(null);
+    const [savedP, setSavedP]   = useState({});
+    const [loaded, setLoaded]   = useState(false);
 
-    // Carrega do Supabase se autenticado, senão cai no form (localStorage)
     useEffect(() => {
       async function load() {
         if (orgId) {
           const data = await getIntegrations(orgId);
-          // Merge todas as plataformas num objeto flat de campos
           const flat = {};
-          Object.values(data).forEach(platform => Object.assign(flat, platform));
+          Object.values(data).forEach(p => Object.assign(flat, p));
           setCreds(flat);
-          // Sincroniza pro form para o scanner conseguir ler
           if (Object.keys(flat).length) setForm(p => ({ ...p, ...flat }));
         } else {
-          // Fallback: pega do form (localStorage)
           const keys = ['metaAppId','metaSecret','metaPageToken','metaIgId',
             'zapiInstanceId','zapiToken','zapiClientToken','zapiPhone',
             'waBaId','waPhoneId','waApiToken',
@@ -2842,197 +2838,235 @@ RETORNE APENAS JSON válido, sem texto antes ou depois:
 
     function setC(k, v) { setCreds(p => ({ ...p, [k]: v })); }
 
-    async function salvarPlataforma(platform, campos) {
-      setSavingInteg(platform);
-      const platformCreds = {};
-      campos.forEach(k => { platformCreds[k] = creds[k] || ''; });
-      if (orgId) {
-        await saveIntegration(orgId, platform, platformCreds);
-      }
-      // Sempre sincroniza pro form/localStorage como fallback
-      setForm(p => ({ ...p, ...platformCreds }));
-      storage.set(`smvp-${co.id}`, JSON.stringify({ ...form, ...platformCreds }));
-      setSaved2(p => ({ ...p, [platform]: true }));
-      setSavingInteg(null);
-      setTimeout(() => setSaved2(p => ({ ...p, [platform]: false })), 3000);
+    async function salvar(platform, campos) {
+      setSavingP(platform);
+      const pc = {};
+      campos.forEach(k => { pc[k] = creds[k] || ''; });
+      if (orgId) await saveIntegration(orgId, platform, pc);
+      setForm(p => ({ ...p, ...pc }));
+      storage.set(`smvp-${co.id}`, JSON.stringify({ ...form, ...pc }));
+      setSavedP(p => ({ ...p, [platform]: true }));
+      setSavingP(null);
+      setTimeout(() => setSavedP(p => ({ ...p, [platform]: false })), 3000);
     }
 
-    // Campo de input que usa creds local
-    function IC({ k, ph, type="text" }) {
-      return <input type={type} value={creds[k]||""} onChange={e=>setC(k,e.target.value)}
-        placeholder={ph} style={{...inp,fontFamily:"inherit"}} />;
-    }
-    function TAC({ k, ph, rows=3 }) {
-      return <textarea value={creds[k]||""} onChange={e=>setC(k,e.target.value)}
-        placeholder={ph} rows={rows} style={{...inp,resize:"vertical",lineHeight:1.6}} />;
-    }
-
-    function BtnSalvar({ platform, campos }) {
-      const isSaving = saving === platform;
-      const isDone   = saved2[platform];
-      return (
-        <div style={{marginTop:14,display:"flex",justifyContent:"flex-end"}}>
-          <button
-            onClick={() => salvarPlataforma(platform, campos)}
-            disabled={isSaving}
-            style={{background:isDone?"#22C55E20":G.primary,color:isDone?"#22C55E":"#fff",border:isDone?"1px solid #22C55E40":"none",
-              padding:"8px 20px",borderRadius:9,cursor:isSaving?"default":"pointer",fontWeight:700,fontSize:13,
-              display:"flex",alignItems:"center",gap:6,transition:"all .3s"}}
-          >
-            {isSaving ? "Salvando…" : isDone ? "✓ Salvo no banco" : "💾 Salvar"}
-          </button>
-        </div>
-      );
-    }
-
-    if (!loaded) return <div style={{textAlign:"center",padding:40,color:C.muted}}>Carregando integrações…</div>;
-
-    const GUIDES = {
-      meta: {
-        title: "Como conectar Instagram + Facebook",
-        icon: "🔵",
-        cor: "#1877F2",
+    const PLATAFORMAS = [
+      {
+        id: "meta", emoji: "📘", nome: "Instagram + Facebook", sub: "Meta Business — publica posts, reels e stories",
+        cor: "#1877F2", campos: ['metaAppId','metaSecret','metaPageToken','metaIgId'],
+        conectado: !!(creds.metaPageToken && creds.metaIgId),
+        status: creds.metaPageToken ? `Token: …${creds.metaPageToken.slice(-6)}` : null,
         passos: [
-          { n:1, titulo:"Acesse o Meta for Developers", desc:"Entre em developers.facebook.com. Se ainda não tem conta, crie gratuitamente com seu Facebook.", link:"https://developers.facebook.com" },
-          { n:2, titulo:"Crie um App do tipo Empresa", desc:"Clique em 'Meus Apps' → 'Criar App'. Escolha o tipo 'Empresa' e avance até finalizar a criação." },
-          { n:3, titulo:"Copie o App ID e App Secret", desc:"No painel do App, vá em Configurações → Básico. O App ID e a Chave Secreta estão logo no topo da página." },
-          { n:4, titulo:"Gere o Page Access Token", desc:"Acesse Ferramentas → Graph API Explorer. Selecione sua Página no seletor. Clique em 'Gerar Token' e autorize as permissões: pages_manage_posts, instagram_basic, instagram_content_publish." },
-          { n:5, titulo:"Encontre o Instagram Business ID", desc:"No Graph API Explorer, faça a consulta: GET /{id-da-sua-pagina}?fields=instagram_business_account. O número retornado é o seu Instagram Business Account ID." },
+          { n:1, titulo:"Acesse o Meta for Developers", desc:"Entre em developers.facebook.com. Crie ou acesse seu App do tipo 'Empresa'.", link:"https://developers.facebook.com" },
+          { n:2, titulo:"Copie o App ID e App Secret", desc:"Em Configurações → Básico, copie o App ID e a Chave Secreta (App Secret)." },
+          { n:3, titulo:"Gere o Page Access Token", desc:"Vá em Ferramentas → Graph API Explorer. Selecione sua Página, clique 'Gerar Token' e autorize: pages_manage_posts, instagram_basic, instagram_content_publish." },
+          { n:4, titulo:"Encontre o Instagram Business ID", desc:"No Graph API Explorer, consulte: GET /{id-da-pagina}?fields=instagram_business_account. O ID retornado é o Instagram Business Account ID." },
+        ],
+        form: [
+          { label:"App ID", k:"metaAppId", ph:"000000000000" },
+          { label:"App Secret", k:"metaSecret", ph:"••••••••", type:"password" },
+          { label:"Page Access Token", k:"metaPageToken", ph:"EAAxxxx…", rows:2 },
+          { label:"Instagram Business Account ID", k:"metaIgId", ph:"17841400000" },
         ]
       },
-      zapi: {
-        title: "Como configurar o Zapi (WhatsApp)",
-        icon: "🟢",
-        cor: "#25D366",
+      {
+        id: "zapi", emoji: "💬", nome: "WhatsApp (Zapi)", sub: "Envia aprovações e alertas via WhatsApp",
+        cor: "#25D366", campos: ['zapiInstanceId','zapiToken','zapiClientToken','zapiPhone'],
+        conectado: !!(creds.zapiInstanceId && creds.zapiToken),
+        status: creds.zapiPhone ? `Número: ${creds.zapiPhone}` : null,
         passos: [
-          { n:1, titulo:"Crie uma conta no Zapi", desc:"Acesse app.z-api.io e cadastre-se. O plano gratuito já permite testar.", link:"https://app.z-api.io" },
-          { n:2, titulo:"Crie uma nova instância", desc:"No painel, clique em 'Nova Instância'. Dê um nome (ex: SociaMinD) e confirme a criação." },
-          { n:3, titulo:"Copie o Instance ID e Token", desc:"Dentro da instância, vá na aba 'Token'. Copie o 'Instance ID' e o 'Token' exatamente como aparecem." },
-          { n:4, titulo:"Copie o Client-Token (Segurança)", desc:"No menu superior do painel Zapi, clique em Configurações → Segurança. Copie o 'Security Token'." },
-          { n:5, titulo:"Conecte o WhatsApp", desc:"Ainda na instância, clique em 'Conectar' e escaneie o QR Code com seu WhatsApp. Quando ficar verde, está ativo." },
+          { n:1, titulo:"Crie uma conta no Zapi", desc:"Acesse app.z-api.io, cadastre-se e crie uma nova instância.", link:"https://app.z-api.io" },
+          { n:2, titulo:"Copie o Instance ID e Token", desc:"Dentro da instância, vá na aba 'Token' e copie o Instance ID e o Token." },
+          { n:3, titulo:"Copie o Client-Token", desc:"No painel Zapi vá em Configurações → Segurança e copie o Security Token." },
+          { n:4, titulo:"Escaneie o QR Code", desc:"Na instância, clique em 'Conectar' e escaneie o QR Code com o WhatsApp da empresa. Quando ficar verde, está ativo." },
+        ],
+        form: [
+          { label:"Instance ID", k:"zapiInstanceId", ph:"3A1B2C3D4E5F", req:true },
+          { label:"Token", k:"zapiToken", ph:"Token da instância", req:true },
+          { label:"Client-Token (Security)", k:"zapiClientToken", ph:"Security Token do painel", req:true },
+          { label:"Número com DDI", k:"zapiPhone", ph:"5514999999999", req:true },
         ]
       },
-      waba: {
-        title: "Como configurar WhatsApp Business API",
-        icon: "🟢",
-        cor: "#25D366",
+      {
+        id: "waba", emoji: "📲", nome: "WhatsApp Business API", sub: "API oficial Meta — campanhas e automações avançadas",
+        cor: "#25D366", campos: ['waBaId','waPhoneId','waApiToken'],
+        conectado: !!(creds.waBaId && creds.waApiToken),
+        status: creds.waBaId ? `WABA: ${creds.waBaId.slice(0,8)}…` : null,
         passos: [
-          { n:1, titulo:"Acesse o Meta Business Suite", desc:"Entre em business.facebook.com. É necessário ter uma conta de negócios verificada no Meta.", link:"https://business.facebook.com" },
-          { n:2, titulo:"Adicione o WhatsApp Business", desc:"No menu lateral, vá em Configurações → Contas → Contas do WhatsApp. Clique em 'Adicionar' e siga o processo de verificação do número." },
-          { n:3, titulo:"Copie o WABA ID", desc:"Em Configurações → Contas do WhatsApp, o WABA ID aparece abaixo do nome da conta (formato numérico longo)." },
-          { n:4, titulo:"Copie o Phone Number ID", desc:"Clique na conta do WhatsApp → Números de telefone. O Phone Number ID aparece ao lado do número cadastrado." },
-          { n:5, titulo:"Gere o Access Token", desc:"Acesse developers.facebook.com → seu App → WhatsApp → Configuração de API. Para produção, gere um token permanente em Configurações → Usuários do Sistema." },
+          { n:1, titulo:"Acesse o Meta Business Suite", desc:"Entre em business.facebook.com com conta de negócios verificada.", link:"https://business.facebook.com" },
+          { n:2, titulo:"Configure o WhatsApp Business", desc:"Vá em Configurações → Contas → Contas do WhatsApp. Adicione e verifique o número." },
+          { n:3, titulo:"Copie o WABA ID e Phone Number ID", desc:"O WABA ID fica abaixo do nome da conta. O Phone Number ID está em Números de telefone." },
+          { n:4, titulo:"Gere o Access Token", desc:"Em developers.facebook.com → seu App → WhatsApp → Configuração de API. Para produção, gere um token permanente em Usuários do Sistema." },
+        ],
+        form: [
+          { label:"WABA ID", k:"waBaId", ph:"000000000000" },
+          { label:"Phone Number ID", k:"waPhoneId", ph:"000000000000" },
+          { label:"Access Token", k:"waApiToken", ph:"EAAxxxx…", rows:2 },
         ]
       },
-      manychat: {
-        title: "Como obter as credenciais ManyChat",
-        icon: "🟣",
-        cor: "#7B5EA7",
+      {
+        id: "manychat", emoji: "🤖", nome: "ManyChat", sub: "Automação de conversas e fluxos no Instagram e WhatsApp",
+        cor: "#7B5EA7", campos: ['mcApiKey','mcBotId','mcFlows'],
+        conectado: !!(creds.mcApiKey && creds.mcBotId),
+        status: creds.mcBotId ? `Bot ID: ${creds.mcBotId}` : null,
         passos: [
-          { n:1, titulo:"Acesse o ManyChat", desc:"Entre em manychat.com e faça login na conta do cliente ou da sua agência.", link:"https://manychat.com" },
-          { n:2, titulo:"Vá em Configurações → API", desc:"No menu lateral esquerdo, clique em Configurações (engrenagem) e depois em 'API'." },
-          { n:3, titulo:"Gere a API Key", desc:"Clique em 'Nova API Key', dê um nome (ex: SociaMinD) e copie a chave gerada. Guarde em local seguro — ela só aparece uma vez." },
-          { n:4, titulo:"Encontre o Bot ID", desc:"O Bot ID está na URL do painel do ManyChat. Exemplo: app.manychat.com/fb/123456789 — o número é o Bot ID." },
-          { n:5, titulo:"Liste os fluxos ativos", desc:"Anote os nomes dos fluxos que você usa (ex: Boas-vindas, Carrinho abandonado). Isso ajuda a IA a entender suas automações." },
+          { n:1, titulo:"Acesse o ManyChat", desc:"Entre em manychat.com e faça login na sua conta.", link:"https://manychat.com" },
+          { n:2, titulo:"Vá em Configurações → API", desc:"No menu lateral, clique na engrenagem → API." },
+          { n:3, titulo:"Gere a API Key", desc:"Clique em 'Nova API Key', nomeie (ex: SociaMinD) e copie a chave. Ela só aparece uma vez." },
+          { n:4, titulo:"Encontre o Bot ID", desc:"O Bot ID está na URL do painel: app.manychat.com/fb/XXXXXXX — o número é o ID." },
+        ],
+        form: [
+          { label:"API Key", k:"mcApiKey", ph:"••••••", type:"password" },
+          { label:"Bot ID", k:"mcBotId", ph:"0000000" },
+          { label:"Fluxos ativos", k:"mcFlows", ph:"Boas-vindas, Carrinho abandonado…", rows:2 },
         ]
       },
-      canva: {
-        title: "Como configurar Canva + N8n",
-        icon: "🎨",
-        cor: "#8B5CF6",
+      {
+        id: "canva", emoji: "🎨", nome: "Canva + N8n + Drive", sub: "Templates visuais, automações e armazenamento de arquivos",
+        cor: "#8B5CF6", campos: ['canvaKitId','canvaFolder','n8nWebhook','superAgentesId','driveFolder'],
+        conectado: !!(creds.canvaKitId || creds.n8nWebhook),
+        status: creds.n8nWebhook ? "Webhook N8n configurado" : creds.canvaKitId ? `Brand Kit: ${creds.canvaKitId}` : null,
         passos: [
-          { n:1, titulo:"Abra seu Brand Kit no Canva", desc:"Entre em canva.com → Brand Hub → Brand Kit. Abra o kit da empresa. O ID está na URL: canva.com/brand/XXXXXXXX.", link:"https://canva.com" },
-          { n:2, titulo:"Copie o link da pasta de templates", desc:"Na pasta de templates no Canva, clique em '...' → Compartilhar → Copiar link. Cole o link no campo." },
-          { n:3, titulo:"Configure o Webhook no N8n", desc:"No N8n, crie um novo Workflow. Adicione o nó 'Webhook' como trigger. Copie a URL gerada (Production URL) e cole no campo.", link:"https://n8n.io" },
-          { n:4, titulo:"Google Drive — link da pasta", desc:"Abra a pasta do cliente no Google Drive. Clique em Compartilhar → Copiar link. Cole no campo do Google Drive." },
-          { n:5, titulo:"Super Agentes ID", desc:"No painel do Super Agentes, vá em Configurações → seu Agente. O ID está no topo da página ou na URL." },
+          { n:1, titulo:"Brand Kit do Canva", desc:"Entre em canva.com → Brand Hub → Brand Kit. O ID está na URL: canva.com/brand/XXXXXXXX.", link:"https://canva.com" },
+          { n:2, titulo:"Pasta de templates", desc:"Na pasta de templates do Canva, clique em '...' → Compartilhar → Copiar link." },
+          { n:3, titulo:"Webhook do N8n", desc:"No N8n, crie um Workflow com trigger 'Webhook'. Copie a URL de produção gerada.", link:"https://n8n.io" },
+          { n:4, titulo:"Google Drive", desc:"Abra a pasta do cliente no Drive → Compartilhar → Copiar link." },
+        ],
+        form: [
+          { label:"Brand Kit ID (Canva)", k:"canvaKitId", ph:"DAFxxxx" },
+          { label:"Pasta de templates (Canva)", k:"canvaFolder", ph:"https://canva.com/folder/…" },
+          { label:"N8n Webhook URL", k:"n8nWebhook", ph:"https://…/webhook/…" },
+          { label:"Super Agentes ID", k:"superAgentesId", ph:"agent-xxxx" },
+          { label:"Google Drive — pasta do cliente", k:"driveFolder", ph:"https://drive.google.com/…" },
         ]
       },
-    };
+    ];
 
-    const guia = helpOpen ? GUIDES[helpOpen] : null;
+    const plat = painel ? PLATAFORMAS.find(p => p.id === painel) : null;
 
-    function SecInteg({ title, accent, helpKey, children }) {
-      return (
-        <div style={{background:C.surf,border:`1px solid ${accent}25`,borderRadius:16,padding:"18px 20px",marginBottom:14}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-            <div style={{fontSize:11,fontWeight:900,letterSpacing:2,color:accent,textTransform:"uppercase"}}>{title}</div>
-            <button
-              onClick={()=>setHelpOpen(helpOpen===helpKey?null:helpKey)}
-              style={{display:"flex",alignItems:"center",gap:5,background:helpOpen===helpKey?`${accent}20`:`${accent}10`,border:`1px solid ${accent}40`,color:accent,borderRadius:8,padding:"5px 12px",cursor:"pointer",fontSize:12,fontWeight:700,transition:"all .2s"}}
-            >
-              {helpOpen===helpKey ? "✕ Fechar guia" : "❓ Como obter"}
-            </button>
-          </div>
-          {children}
-        </div>
-      );
-    }
+    if (!loaded) return <div style={{textAlign:"center",padding:40,color:C.muted,fontSize:13}}>Carregando integrações…</div>;
 
     return <>
-      <InfoBox color="#F5A623">🔒 Suas credenciais ficam salvas com segurança neste dispositivo e nunca são compartilhadas.</InfoBox>
+      {/* Header */}
+      <div style={{marginBottom:20,padding:"18px 20px",background:G.glow,border:`1px solid ${T.primary}20`,borderRadius:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:44,height:44,borderRadius:11,background:G.primary,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:20}}>🔌</div>
+          <div>
+            <div style={{fontSize:17,fontWeight:700,background:G.hero,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>Conectar Redes e Ferramentas</div>
+            <div style={{fontSize:12,color:C.muted,marginTop:2}}>Clique em qualquer integração para conectar. Um guia passo a passo vai aparecer.</div>
+          </div>
+        </div>
+      </div>
 
-      {/* Painel de ajuda flutuante */}
-      {guia && (
-        <div style={{position:"fixed",bottom:24,right:24,width:380,maxHeight:"70vh",overflowY:"auto",background:"#0D0F1A",border:`2px solid ${guia.cor}50`,borderRadius:18,boxShadow:`0 8px 48px #00000080,0 0 0 1px ${guia.cor}20`,zIndex:9999,padding:"20px 22px"}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:20}}>{guia.icon}</span>
-              <span style={{fontSize:13,fontWeight:800,color:"#fff",lineHeight:1.2}}>{guia.title}</span>
+      {/* Cards de plataformas */}
+      <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom: painel ? 340 : 0}}>
+        {PLATAFORMAS.map(p => (
+          <div key={p.id}
+            onClick={() => setPainel(painel === p.id ? null : p.id)}
+            style={{background: painel===p.id ? `${p.cor}12` : C.surf, border:`2px solid ${painel===p.id ? p.cor : p.conectado ? `${p.cor}50` : C.border}`,
+              borderRadius:16, padding:"16px 20px", cursor:"pointer", transition:"all .2s",
+              display:"flex", alignItems:"center", gap:16}}>
+            {/* Ícone */}
+            <div style={{width:52,height:52,borderRadius:14,background:`${p.cor}18`,border:`1px solid ${p.cor}30`,
+              display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>
+              {p.emoji}
             </div>
-            <button onClick={()=>setHelpOpen(null)} style={{background:"#ffffff15",border:"none",color:"#fff",borderRadius:8,width:28,height:28,cursor:"pointer",fontSize:16,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
-          </div>
-          <div style={{display:"flex",flexDirection:"column",gap:10}}>
-            {guia.passos.map(p=>(
-              <div key={p.n} style={{background:"#ffffff08",border:`1px solid ${guia.cor}20`,borderRadius:12,padding:"12px 14px"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                  <div style={{width:22,height:22,borderRadius:"50%",background:guia.cor,color:"#fff",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{p.n}</div>
-                  <span style={{fontSize:12,fontWeight:700,color:"#fff"}}>{p.titulo}</span>
-                </div>
-                <p style={{margin:"0 0 0 30px",fontSize:11,color:"#aaa",lineHeight:1.6}}>{p.desc}</p>
-                {p.link && (
-                  <a href={p.link} target="_blank" rel="noreferrer" style={{display:"inline-block",marginTop:8,marginLeft:30,fontSize:11,color:guia.cor,fontWeight:600,textDecoration:"none",borderBottom:`1px solid ${guia.cor}40`}}>
-                    Abrir → {p.link.replace("https://","").split("/")[0]}
-                  </a>
-                )}
+            {/* Info */}
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+                <span style={{fontSize:15,fontWeight:700,color:C.text}}>{p.nome}</span>
+                {p.conectado
+                  ? <span style={{fontSize:10,fontWeight:700,background:"#22C55E18",color:"#22C55E",border:"1px solid #22C55E30",borderRadius:20,padding:"2px 8px"}}>✓ Conectado</span>
+                  : <span style={{fontSize:10,fontWeight:700,background:`${p.cor}15`,color:p.cor,border:`1px solid ${p.cor}30`,borderRadius:20,padding:"2px 8px"}}>Não configurado</span>
+                }
               </div>
-            ))}
+              <div style={{fontSize:12,color:C.muted,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.status || p.sub}</div>
+            </div>
+            {/* Botão */}
+            <button style={{background: painel===p.id ? `${p.cor}25` : p.conectado ? "#22C55E15" : G.primary,
+              color: painel===p.id ? p.cor : p.conectado ? "#22C55E" : "#fff",
+              border: painel===p.id ? `1px solid ${p.cor}50` : p.conectado ? "1px solid #22C55E40" : "none",
+              borderRadius:10, padding:"8px 16px", fontSize:12, fontWeight:700, cursor:"pointer", flexShrink:0, whiteSpace:"nowrap"}}>
+              {painel===p.id ? "✕ Fechar" : p.conectado ? "✏ Editar" : "⚡ Conectar"}
+            </button>
           </div>
-          <p style={{margin:"14px 0 0",fontSize:10,color:"#555",textAlign:"center"}}>Deixe este guia aberto enquanto configura</p>
+        ))}
+      </div>
+
+      {/* Painel lateral fixo na parte inferior */}
+      {plat && (
+        <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:9999,background:"#0C0E1A",borderTop:`2px solid ${plat.cor}50`,
+          boxShadow:"0 -8px 48px #00000090",padding:"20px 24px 28px",maxHeight:"55vh",overflowY:"auto"}}>
+          <div style={{maxWidth:900,margin:"0 auto"}}>
+            {/* Cabeçalho do painel */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontSize:22}}>{plat.emoji}</span>
+                <div>
+                  <div style={{fontSize:15,fontWeight:800,color:"#fff"}}>Configurar {plat.nome}</div>
+                  <div style={{fontSize:11,color:"#888",marginTop:1}}>Siga os passos ao lado e cole as informações nos campos</div>
+                </div>
+              </div>
+              <button onClick={()=>setPainel(null)} style={{background:"#ffffff15",border:"none",color:"#aaa",borderRadius:8,padding:"6px 12px",cursor:"pointer",fontSize:12,fontWeight:600}}>✕ Fechar</button>
+            </div>
+
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:24}}>
+              {/* Passos */}
+              <div>
+                <div style={{fontSize:11,fontWeight:800,color:plat.cor,letterSpacing:2,textTransform:"uppercase",marginBottom:12}}>Guia passo a passo</div>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {plat.passos.map(s => (
+                    <div key={s.n} style={{display:"flex",gap:10,alignItems:"flex-start",background:"#ffffff06",borderRadius:10,padding:"10px 12px"}}>
+                      <div style={{width:24,height:24,borderRadius:"50%",background:plat.cor,color:"#fff",fontSize:11,fontWeight:800,
+                        display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{s.n}</div>
+                      <div>
+                        <div style={{fontSize:12,fontWeight:700,color:"#fff",marginBottom:3}}>{s.titulo}</div>
+                        <div style={{fontSize:11,color:"#888",lineHeight:1.5}}>{s.desc}</div>
+                        {s.link && <a href={s.link} target="_blank" rel="noreferrer"
+                          style={{display:"inline-block",marginTop:5,fontSize:11,color:plat.cor,fontWeight:600,textDecoration:"none"}}>
+                          → Abrir {s.link.replace("https://","").split("/")[0]}
+                        </a>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Campos de configuração */}
+              <div>
+                <div style={{fontSize:11,fontWeight:800,color:plat.cor,letterSpacing:2,textTransform:"uppercase",marginBottom:12}}>Cole aqui as informações</div>
+                <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  {plat.form.map(f => (
+                    <div key={f.k}>
+                      <label style={{display:"block",fontSize:11,fontWeight:700,color:"#888",marginBottom:4,letterSpacing:.5,textTransform:"uppercase"}}>
+                        {f.label}{f.req && <span style={{color:plat.cor}}> *</span>}
+                      </label>
+                      {f.rows
+                        ? <textarea value={creds[f.k]||""} onChange={e=>setC(f.k,e.target.value)}
+                            placeholder={f.ph} rows={f.rows}
+                            style={{...inp,resize:"vertical",lineHeight:1.5,fontFamily:"monospace",fontSize:12,background:"#0A0C16"}} />
+                        : <input type={f.type||"text"} value={creds[f.k]||""} onChange={e=>setC(f.k,e.target.value)}
+                            placeholder={f.ph}
+                            style={{...inp,fontFamily:"monospace",fontSize:12,background:"#0A0C16"}} />
+                      }
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => salvar(plat.id, plat.campos)}
+                    disabled={savingP === plat.id}
+                    style={{marginTop:6,background:savedP[plat.id]?"#22C55E20":G.primary,
+                      color:savedP[plat.id]?"#22C55E":"#fff",
+                      border:savedP[plat.id]?"1px solid #22C55E50":"none",
+                      padding:"11px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14,
+                      display:"flex",alignItems:"center",justifyContent:"center",gap:8,transition:"all .3s"}}>
+                    {savingP===plat.id ? "Salvando…" : savedP[plat.id] ? "✓ Salvo com sucesso!" : `💾 Salvar configuração`}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
-
-      <SecInteg title="Meta Business — Instagram + Facebook" accent={C.blue} helpKey="meta">
-        <G2 ch={[<F label="App ID"><IC k="metaAppId" ph="000000000000" /></F>,<F label="App Secret"><IC k="metaSecret" type="password" ph="••••••••" /></F>]} />
-        <F label="Page Access Token"><TAC k="metaPageToken" ph="EAAxxxx…" rows={2} /></F>
-        <F label="Instagram Business Account ID"><IC k="metaIgId" ph="17841400000" /></F>
-        <BtnSalvar platform="meta" campos={['metaAppId','metaSecret','metaPageToken','metaIgId']} />
-      </SecInteg>
-
-      <SecInteg title="Zapi — WhatsApp Automático" accent="#25D366" helpKey="zapi">
-        <G2 ch={[<F label="Instance ID" req><IC k="zapiInstanceId" ph="Ex: 3A1B2C3D4E5F" /></F>,<F label="Token" req><IC k="zapiToken" ph="Token da instância" /></F>]} />
-        <G2 ch={[<F label="Client-Token (Security)" req><IC k="zapiClientToken" ph="Security Token do painel" /></F>,<F label="Número para aprovação (com DDI)" req><IC k="zapiPhone" ph="5514999999999" /></F>]} />
-        <BtnSalvar platform="zapi" campos={['zapiInstanceId','zapiToken','zapiClientToken','zapiPhone']} />
-      </SecInteg>
-
-      <SecInteg title="WhatsApp Business API (Meta)" accent="#25D366" helpKey="waba">
-        <G2 ch={[<F label="WABA ID"><IC k="waBaId" ph="000000000000" /></F>,<F label="Phone Number ID"><IC k="waPhoneId" ph="000000000000" /></F>]} />
-        <F label="Access Token"><TAC k="waApiToken" ph="EAAxxxx…" rows={2} /></F>
-        <BtnSalvar platform="waba" campos={['waBaId','waPhoneId','waApiToken']} />
-      </SecInteg>
-
-      <SecInteg title="ManyChat" accent={C.purple} helpKey="manychat">
-        <G2 ch={[<F label="API Key"><IC k="mcApiKey" type="password" ph="••••••" /></F>,<F label="Bot ID"><IC k="mcBotId" ph="0000000" /></F>]} />
-        <F label="Fluxos ativos"><TAC k="mcFlows" ph="Boas-vindas, nutrição, respostas…" rows={2} /></F>
-        <BtnSalvar platform="manychat" campos={['mcApiKey','mcBotId','mcFlows']} />
-      </SecInteg>
-
-      <SecInteg title="Canva + N8n + Super Agentes" accent={C.gold} helpKey="canva">
-        <G2 ch={[<F label="Brand Kit ID"><IC k="canvaKitId" ph="DAFxxxx" /></F>,<F label="Pasta templates"><IC k="canvaFolder" ph="https://canva.com/folder/…" /></F>]} />
-        <G2 ch={[<F label="N8n Webhook"><IC k="n8nWebhook" ph="https://…/webhook/…" /></F>,<F label="Super Agentes ID"><IC k="superAgentesId" ph="agent-xxxx" /></F>]} />
-        <F label="Google Drive"><IC k="driveFolder" ph="https://drive.google.com/…" /></F>
-        <BtnSalvar platform="canva" campos={['canvaKitId','canvaFolder','n8nWebhook','superAgentesId','driveFolder']} />
-      </SecInteg>
     </>;
   }
 
