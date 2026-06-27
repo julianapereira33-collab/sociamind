@@ -264,7 +264,7 @@ export default function App({ session, onSignOut }) {
   // Tokens dinâmicos por modo
   const T = useMemo(() => getTokens(mode), [mode]);
   const G = useMemo(() => { const g = getGradients(T); return { ...g, amber: g.primary, glow: g.glass }; }, [T]);
-  const C = { ...T, muted:T.textMuted, hint:T.textMuted, gold:T.primaryXL, blue:T.primaryXL, surf4:T.surf3 };
+  const C = useMemo(() => ({ ...T, muted:T.textMuted, hint:T.textMuted, gold:T.primaryXL, blue:T.primaryXL, surf4:T.surf3 }), [T]);
 
   // Input base style
   const inp = useMemo(() => ({
@@ -356,7 +356,7 @@ export default function App({ session, onSignOut }) {
   function flash(msg,type="teal"){ setToast({msg,type}); setTimeout(()=>setToast(null),2800); }
   const upd=useCallback((k,v)=>setForm(p=>({...p,[k]:v})),[]);
   const toggleArr=useCallback((k,v)=>setForm(p=>({...p,[k]:(p[k]||[]).includes(v)?p[k].filter(x=>x!==v):[...(p[k]||[]),v]})),[]);
-  async function handleImg(field,file){ const r=new FileReader(); r.onload=e=>upd(field,e.target.result); r.readAsDataURL(file); }
+  const handleImg=useCallback(async(field,file)=>{ const r=new FileReader(); r.onload=e=>upd(field,e.target.result); r.readAsDataURL(file); },[upd]);
   const formRef=useRef(form); formRef.current=form;
 
   // ── Primitives (useCallback = referência estável — corrige perda de foco ao digitar) ─
@@ -370,13 +370,14 @@ export default function App({ session, onSignOut }) {
   const Badge=useCallback(({color,bg,children})=><span style={{fontSize:10,fontWeight:700,padding:"3px 9px",borderRadius:20,background:bg||color+"20",color,border:`1px solid ${color}30`}}>{children}</span>,[]);
   const Toggle=useCallback(({val,onChange,label})=><div onClick={()=>onChange(!val)} style={{display:"flex",alignItems:"center",gap:9,cursor:"pointer",userSelect:"none"}}><div style={{width:38,height:20,borderRadius:10,background:val?`linear-gradient(90deg,${T.primary},${T.primaryL})`:C.border2,transition:"background .2s",position:"relative",boxShadow:val?T.glowBox:"none"}}><div style={{width:16,height:16,borderRadius:"50%",background:"#FFFFFF",position:"absolute",top:2,left:val?20:2,transition:"left .2s"}} /></div><span style={{fontSize:12,color:val?T.primaryXL:C.muted}}>{label}</span></div>,[T,C]);
   const InfoBox=useCallback(({color,children})=>{ const c=color||T.primaryL; return <div style={{background:`radial-gradient(ellipse at 0% 50%,${c}08,transparent 70%)`,border:`1px solid ${c}20`,borderRadius:10,padding:"11px 15px",marginBottom:16,fontSize:12,color:C.muted,lineHeight:1.5}}>{children}</div>; },[C,T]);
-  function ImgUpload({k,label,circle=false,size=88}){
+  const ImgUpload=useCallback(({k,label,circle=false,size=88})=>{
     const ref=useRef();
-    return <div><div onClick={()=>ref.current.click()} style={{width:size,height:size,borderRadius:circle?"50%":12,background:C.surf3,border:`2px dashed ${form[k]?co.color+"70":C.border2}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",overflow:"hidden",position:"relative"}}>
-      {form[k]?<img src={form[k]} style={{width:"100%",height:"100%",objectFit:"cover"}} alt="" />:<div style={{textAlign:"center",padding:8}}><div style={{fontSize:18}}>📷</div><div style={{fontSize:9,color:C.muted,marginTop:3,lineHeight:1.3}}>{label}</div></div>}
-      {form[k]&&<div onClick={e=>{e.stopPropagation();upd(k,"");}} style={{position:"absolute",top:4,right:4,background:"#EF444490",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",cursor:"pointer"}}>✕</div>}
+    const val=formRef.current[k];
+    return <div><div onClick={()=>ref.current.click()} style={{width:size,height:size,borderRadius:circle?"50%":12,background:C.surf3,border:`2px dashed ${val?co?.color+"70":C.border2}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",overflow:"hidden",position:"relative"}}>
+      {val?<img src={val} style={{width:"100%",height:"100%",objectFit:"cover"}} alt="" />:<div style={{textAlign:"center",padding:8}}><div style={{fontSize:18}}>📷</div><div style={{fontSize:9,color:C.muted,marginTop:3,lineHeight:1.3}}>{label}</div></div>}
+      {val&&<div onClick={e=>{e.stopPropagation();upd(k,"");}} style={{position:"absolute",top:4,right:4,background:"#EF444490",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",cursor:"pointer"}}>✕</div>}
     </div><input ref={ref} type="file" accept="image/*" style={{display:"none"}} onChange={e=>e.target.files[0]&&handleImg(k,e.target.files[0])} /></div>;
-  }
+  },[C,co,upd,handleImg]);
   const Chips=useCallback(({k,opts,accent})=>{ const val=formRef.current[k]||[]; const ac=accent||co?.color||T.primaryXL; return <div style={{display:"flex",flexWrap:"wrap",gap:7}}>{opts.map(([v,l])=>{ const on=val.includes(v); return <button key={v} onClick={()=>toggleArr(k,v)} style={{padding:"5px 14px",borderRadius:20,cursor:"pointer",fontSize:12,border:`1px solid ${on?ac+"80":C.border2}`,background:on?ac+"18":C.surf3,color:on?ac:C.muted,fontWeight:on?700:400,transition:"all .12s"}}>{l}</button>; })}</div>; },[toggleArr,C,T,co]);
 
   // ─── LOGIN ────────────────────────────────────────────────────────────────
