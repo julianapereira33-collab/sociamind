@@ -159,7 +159,9 @@ create trigger content_updated_at before update on public.content_items
 
 -- ── FUNÇÃO: criar org + profile no signup ────────────────────
 create or replace function public.handle_new_user()
-returns trigger language plpgsql security definer as $$
+returns trigger language plpgsql security definer
+set search_path = public, pg_temp
+as $$
 declare
   new_org_id uuid;
 begin

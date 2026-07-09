@@ -7,6 +7,23 @@ export const supabase = createClient(URL, ANON, {
   auth: { persistSession: true, autoRefreshToken: true },
 });
 
+// Wrapper de fetch pras nossas Vercel Functions (/api/*) — sempre anexa o
+// access_token da sessão Supabase atual como Bearer. As functions do lado
+// servidor validam esse token antes de gastar crédito de IA/WhatsApp/imagem
+// (ver api/_auth.js) — sem isso, qualquer pessoa com a URL podia chamar
+// esses endpoints direto e gerar custo sem estar logada.
+export async function apiFetch(path, body) {
+  const { data: { session } } = await supabase.auth.getSession();
+  return fetch(path, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+}
+
 // ── Helpers de org data ──────────────────────────────────────
 
 export async function getOrgData(orgId) {

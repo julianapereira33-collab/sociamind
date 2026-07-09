@@ -1,5 +1,14 @@
 // api/stripe-checkout.js — cria sessão de checkout Stripe
+//
+// ACHADO: nenhum lugar do frontend (App.jsx, Auth.jsx) chama este endpoint
+// hoje — os botões "Começar 7 dias grátis" só trocam a tela pra signup,
+// não iniciam checkout de verdade. Cobrança não está ligada na prática.
+// Não gatilhei auth obrigatória aqui (diferente de claude/whatsapp/generate-image)
+// porque criar uma Checkout Session não tem custo de API por si só — mas
+// como não tem chamador, não tem risco de abuso agora. Revisar quando
+// ligar o fluxo de cobrança de verdade.
 import Stripe from 'stripe';
+import { allowCors } from './_cors.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
@@ -15,9 +24,7 @@ const PRICES = {
 };
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  allowCors(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 

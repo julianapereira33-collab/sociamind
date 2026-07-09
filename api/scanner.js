@@ -1,11 +1,15 @@
+import { requireAuth } from './_auth.js';
+import { allowCors } from './_cors.js';
+
 const GRAPH = 'https://graph.facebook.com/v23.0';
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  allowCors(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const user = await requireAuth(req, res);
+  if (!user) return;
 
   const { igUserId, pageId, accessToken } = req.body;
 

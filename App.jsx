@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { storage } from "./src/storage.js";
 import { getMode, getTokens, getGradients } from "./src/design.js";
-import { supabase, getOrgData, saveOrgData, getProfile, getIntegrations, saveIntegration } from "./src/supabase.js";
+import { supabase, apiFetch, getOrgData, saveOrgData, getProfile, getIntegrations, saveIntegration } from "./src/supabase.js";
 import {
   Sparkles, ScanLine, Palette, Package, Users, FileText,
   Calendar, CalendarClock, Smartphone, Plug, Lock,
@@ -865,14 +865,10 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
         if (form.metaIgId && form.metaPageToken) {
           addLog("📊 Buscando dados reais via Graph API...", "info");
           try {
-            const scanRes = await fetch("/api/scanner", {
-              method:"POST",
-              headers:{"Content-Type":"application/json"},
-              body: JSON.stringify({
-                igUserId: form.metaIgId,
-                pageId: form.fbPageId,
-                accessToken: form.metaPageToken,
-              })
+            const scanRes = await apiFetch("/api/scanner", {
+              igUserId: form.metaIgId,
+              pageId: form.fbPageId,
+              accessToken: form.metaPageToken,
             });
             const scanData = await scanRes.json();
             if (!scanData.error && scanData.instagram) {
@@ -891,14 +887,10 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
           } catch { addLog("⚠️ Graph API indisponível — usando análise por URL", "info"); }
         }
 
-        const res = await fetch("/api/claude", {
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({
-            model:"claude-sonnet-4-6",
-            max_tokens:8000,
-            messages:[{role:"user", content: prompt + graphData}]
-          })
+        const res = await apiFetch("/api/claude", {
+          model:"claude-sonnet-4-6",
+          max_tokens:8000,
+          messages:[{role:"user", content: prompt + graphData}]
         });
         const data = await res.json();
         if (data.error) throw new Error(JSON.stringify(data.error));
@@ -1854,7 +1846,7 @@ RETORNE APENAS JSON válido, sem texto antes ou depois, sem markdown. Estrutura:
       updS(it.id,"Ag. aprovação");
       const msg=`🎯 *Aprovação — ${co.name}*\n\n📌 *${it.titulo||"Post"}*\n📅 ${it.data} às ${it.hora||"--:--"}\n📲 ${it.plataforma}\n\n📝 *Legenda:*\n${(it.legenda||"").slice(0,500)}\n\n---\nResponda:\n✅ *APROVAR*\n✏️ *ALTERAR: [comentário]*`;
       try{
-        const r=await fetch('/api/whatsapp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+        const r=await apiFetch('/api/whatsapp', {message:msg});
         const d=await r.json();
         if(d.success) flash("✅ Enviado para WhatsApp!","teal");
         else flash(`⚠️ ${d.error}`,"coral");
@@ -2005,8 +1997,7 @@ ${promptExtra?`Additional instruction: ${promptExtra}`:""}
 Style: editorial photography, natural lighting, 4k quality, social media aesthetic.
 Do NOT include text or logos in the image.`;
       try{
-        const r=await fetch("/api/generate-image",{method:"POST",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({prompt:basePrompt,n:3,size:"1024x1024",quality:"high"})});
+        const r=await apiFetch("/api/generate-image", {prompt:basePrompt,n:3,size:"1024x1024",quality:"high"});
         const d=await r.json();
         if(d.error) throw new Error(d.error);
         setOpcoesImg(d.images.map(img=>({b64:img.b64,preview:`data:image/png;base64,${img.b64}`})));
@@ -2084,7 +2075,7 @@ Retorne APENAS JSON:
         const msgs=[{role:"user",content:imagens.length>0
           ?[...imagens.map(img=>({type:"image",source:{type:"base64",media_type:img.type,data:img.data}})),{type:"text",text:prompt}]
           :prompt}];
-        const r=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1500,messages:msgs})});
+        const r=await apiFetch("/api/claude", {model:"claude-sonnet-4-6",max_tokens:1500,messages:msgs});
         const d=await r.json();
         if(d.error) throw new Error(JSON.stringify(d.error));
         const raw=d.content?.find(b=>b.type==="text")?.text||"";
@@ -2124,7 +2115,7 @@ Retorne APENAS JSON:
         const msgs=[{role:"user",content:imagens.length>0
           ?[...imagens.map(img=>({type:"image",source:{type:"base64",media_type:img.type,data:img.data}})),{type:"text",text:prompt}]
           :prompt}];
-        const r=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:3000,messages:msgs})});
+        const r=await apiFetch("/api/claude", {model:"claude-sonnet-4-6",max_tokens:3000,messages:msgs});
         const d=await r.json();
         if(d.error) throw new Error(JSON.stringify(d.error));
         const raw=d.content?.find(b=>b.type==="text")?.text||"";
@@ -2172,7 +2163,7 @@ Retorne APENAS JSON:
       updS(it.id,"Ag. aprovação"); setWaP(it);
       const msg=`🎯 *Aprovação de Conteúdo — ${co.name}*\n\n📌 *${it.titulo}*\n📅 ${it.data} às ${it.hora||"--:--"}\n📲 ${it.plataforma}\n\n📝 *Legenda:*\n${it.legenda}\n\n---\nResponda:\n✅ *APROVAR* — para publicar\n✏️ *ALTERAR: [comentário]* — para solicitar mudança`;
       try{
-        const r=await fetch('/api/whatsapp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg})});
+        const r=await apiFetch('/api/whatsapp', {message:msg});
         const d=await r.json();
         if(d.success) flash("✅ Enviado para WhatsApp!","teal");
         else flash(`⚠️ Erro: ${d.error}`,"coral");
@@ -2213,7 +2204,7 @@ RETORNE APENAS JSON válido, sem texto antes ou depois:
   }
 ]`;
       try{
-        const r=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:6000,messages:[{role:"user",content:prompt}]})});
+        const r=await apiFetch("/api/claude", {model:"claude-sonnet-4-6",max_tokens:6000,messages:[{role:"user",content:prompt}]});
         const d=await r.json();
         if(d.error) throw new Error(JSON.stringify(d.error));
         const raw=d.content?.find(b=>b.type==="text")?.text||"";
@@ -3279,7 +3270,7 @@ Retorne APENAS JSON válido:
   ...
 ]`;
       try{
-        const r=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1200,messages:[{role:"user",content:prompt}]})});
+        const r=await apiFetch("/api/claude", {model:"claude-sonnet-4-6",max_tokens:1200,messages:[{role:"user",content:prompt}]});
         const d=await r.json();
         if(d.error) throw new Error(JSON.stringify(d.error));
         const raw=d.content?.find(b=>b.type==="text")?.text||"[]";
@@ -3391,7 +3382,7 @@ PÚBLICO: ${(form.publicos||[]).find(p=>p.id==nova.publico)?.nome||"Profissionai
 Retorne APENAS o texto do post LinkedIn pronto para publicar. Máximo 1.300 caracteres. Comece com uma frase de impacto, desenvolva com contexto/valor, termine com CTA e 3-5 hashtags relevantes.`
       };
       try{
-        const r=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:prompts[tipo]}]})});
+        const r=await apiFetch("/api/claude", {model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:prompts[tipo]}]});
         const d=await r.json();
         if(d.error) throw new Error(JSON.stringify(d.error));
         const txt=d.content?.find(b=>b.type==="text")?.text||"";
@@ -3414,7 +3405,7 @@ Retorne APENAS o texto do post LinkedIn pronto para publicar. Máximo 1.300 cara
       setSending(true);
       if(tipo==="whatsapp"){
         try {
-          await fetch("/api/whatsapp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:`📢 *${nova.nome}*\n\n${nova.mensagem}`})});
+          await apiFetch("/api/whatsapp", {message:`📢 *${nova.nome}*\n\n${nova.mensagem}`});
         } catch {}
       }
       saveCampanha("enviada");
@@ -3693,7 +3684,7 @@ Retorne APENAS o texto do post LinkedIn pronto para publicar. Máximo 1.300 cara
       if(!replyTxt.trim()||!msgSel) return;
       setEnviandoReply(true);
       if(canal==="whatsapp"&&temZapi){
-        try{ await fetch("/api/whatsapp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:`${replyTxt}`,to:msgSel.telefone||""})}); }catch{}
+        try{ await apiFetch("/api/whatsapp", {message:`${replyTxt}`,to:msgSel.telefone||""}); }catch{}
       }
       flash(`✓ Resposta enviada para ${msgSel.de}`,"teal");
       setReplyTxt(""); setMsgSel(null); setEnviandoReply(false);
@@ -4095,17 +4086,13 @@ Responda de forma clara, direta e amigável em português. Máximo 3 parágrafos
       setChatMsgs(p=>[...p,{role:"user",text:userMsg}]);
       setLoading(true);
       try {
-        const res = await fetch("/api/claude",{
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({
-            messages:[
-              ...chatMsgs.filter(m=>m.role!=="assistant"||chatMsgs.indexOf(m)>0).map(m=>({role:m.role,content:m.text})),
-              {role:"user",content:userMsg}
-            ],
-            system: SYSTEM_PROMPT,
-            max_tokens:600,
-          })
+        const res = await apiFetch("/api/claude", {
+          messages:[
+            ...chatMsgs.filter(m=>m.role!=="assistant"||chatMsgs.indexOf(m)>0).map(m=>({role:m.role,content:m.text})),
+            {role:"user",content:userMsg}
+          ],
+          system: SYSTEM_PROMPT,
+          max_tokens:600,
         });
         const data = await res.json();
         const reply = data.content?.[0]?.text || data.reply || "Não entendi. Pode reformular?";
